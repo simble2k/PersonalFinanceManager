@@ -2,8 +2,8 @@
 #include <iomanip>
 #include "date.h"
 #include "wallet.h"
-#include "Category.h"
 #include "IncomeSourceTable.h"
+#include "Category.h"
 #include "IncomeTransaction.h"
 #include "ExpenseTransaction.h"
 
@@ -112,7 +112,7 @@ int main() {
     // --- PHẦN 2: KIỂM TRA LƯU FILE ---
     cout << "\n>>> DANG LUU DU LIEU VAO FILE...\n";
     wallets.saveToFile(fileWallet);
-    sources.saveBinary(fileSource);
+    sources.saveToFile(fileSource);
     categories.saveToFile(fileCat);
     incomes.saveToFile(fileInc);
     expenses.saveToFile(fileExp);
@@ -130,7 +130,7 @@ int main() {
     ExpenseArray newExpenses;
 
     newWallets.loadFromFile(fileWallet);
-    newSources.loadBinary(fileSource);
+    newSources.loadFromFile(fileSource);
     newCategories.loadFromFile(fileCat);
     newIncomes.loadFromFile(fileInc);
     newExpenses.loadFromFile(fileExp);

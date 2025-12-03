@@ -1,26 +1,18 @@
 #ifndef CATEGORY_H
 #define CATEGORY_H
 #include <string>
+#include "NameTable.h"
 using namespace std;
-struct CategoryNode {
-    int id;
-    string name;
-    CategoryNode* next;
-    CategoryNode(int id, string name) : id(id), name(name), next(nullptr){};
-};
-class CategoryTable {
-private:
-    CategoryNode** table; // Mảng con trỏ
-    int capacity;       // Kích thước mảng
-
-    int hashFunction(int key);
+class CategoryTable : public NameTable {
 public:
-    CategoryTable(int initialCapacity);
-    ~CategoryTable();
-    void addCategory(int id, string name);
-    string getCategoryName(int id);
-    void removeCategory(int id);
-    void saveToFile(const string &filename);
-    void loadFromFile(const string &filename);
+    CategoryTable(int size) : NameTable(size) {}
+    
+    void addCategory(int id, string name) {
+        add(id, name);
+    }
+    
+    string getCategoryName(int id) {
+        return getName(id);
+    }
 };
 #endif
