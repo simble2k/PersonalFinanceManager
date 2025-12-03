@@ -1,6 +1,12 @@
 # Build files
 .vscode/
 
+# Test files
+test.cpp
+
+# Saves and databases
+saves/*.dat
+
 # Prerequisites
 *.d
 
