@@ -174,15 +174,23 @@ void incomeAnnualBreakdown(IncomeArray& incomes, IncomeSourceTable& sources) {
     int targetID;
     cout << "Ban muon xem bao cao tu nguon thu nao (nhap ID): ";
     cin >> targetID;
+    
+    double totalIncome = 0.0; //Get total income
+    for (int i =0;i < incomes.getCount(); i++) {
+        IncomeTransaction t = incomes.getAt(i);
+        
+        if (isYearSelected(t.day.year, selectedYear, n)) {
+            totalIncome += t.amount;
+        }
+    }
 
-
-    double totalIncome = 0.0;
+    double totalIncomebySource = 0.0; //get income by source
 
     for (int i =0;i < incomes.getCount(); i++) {
         IncomeTransaction t = incomes.getAt(i);
         
         if (isYearSelected(t.day.year, selectedYear, n) && (t.sourceID == targetID)) {
-            totalIncome += t.amount;
+            totalIncomebySource += t.amount;
         }
     }
 
@@ -191,8 +199,12 @@ void incomeAnnualBreakdown(IncomeArray& incomes, IncomeSourceTable& sources) {
     cout << "BAO CAO TONG HOP NAM: ";
     for (int i = 0; i < n; i++) cout << selectedYear[i] << (i < n-1 ? ", " : "");
     cout << endl;
+    double percentage = (totalIncomebySource)/(totalIncome) * 100.0;
+    cout << "--------------------------------------------\n";
     cout << "Nguon thu: " << sourceName << endl;
-    cout << "Tong thu: " << totalIncome << endl;
+    cout << "Tong thu ca nam: " << totalIncome << endl;
+    cout << "Tong thu tu nguon nay: " << totalIncomebySource << endl;
+    cout << "Ti le thu tu nguon nay " << percentage << "%\n";
     cout << "============================================\n";
     delete[] selectedYear;
 }
@@ -211,12 +223,22 @@ void expenseAnnualBreakdown(ExpenseArray& expenses, CategoryTable& categories) {
     int targetID;
     cout << "Ban muon xem bao cao theo danh muc nao (nhap ID): ";
     cin >> targetID;
-    double totalExpense = 0.0;
+
+    double totalExpense = 0.0; //Get total expense
+    for (int i =0;i < expenses.getCount(); i++) {
+        ExpenseTransaction t = expenses.getAt(i);
+        
+        if (isYearSelected(t.day.year, selectedYear, n)) {
+            totalExpense += t.amount;
+        }
+    }
+
+    double totalExpenseByCategory = 0.0;
     for (int i =0;i < expenses.getCount(); i++) {
         ExpenseTransaction t = expenses.getAt(i);
         
         if (isYearSelected(t.day.year, selectedYear, n) && (t.categoryID == targetID)) {
-            totalExpense += t.amount;
+            totalExpenseByCategory += t.amount;
         }
     }
     string categoryName = categories.getCategoryName(targetID);
@@ -226,6 +248,44 @@ void expenseAnnualBreakdown(ExpenseArray& expenses, CategoryTable& categories) {
     cout << endl;
     cout << "Danh muc: " << categoryName << endl;
     cout << "Tong chi: " << totalExpense << endl;
+    cout << "Tong chi theo danh muc: " << totalExpenseByCategory << endl;
+    double percentage = (totalExpenseByCategory)/(totalExpense) * 100.0;  
+    cout << "Ti le chi theo danh muc: " << percentage << "%\n";
     cout << "============================================\n";
     delete[] selectedYear;
+}
+
+void statisticMenu(IncomeArray& incomes, ExpenseArray& expenses, 
+                   WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories) {
+    int choice;
+    do {
+        cout << "\n=== STATISTICS & REPORTING ===\n";
+        cout << "1. Thong ke theo khoang thoi gian (Time-based)\n";
+        cout << "2. Thong ke chi tiet theo Vi (Wallet-based)\n";
+        cout << "3. Tong quan Thu/Chi nhieu nam (Overview)\n"; 
+        cout << "4. Phan tich chi tiet Nguon Thu nhieu nam (Income Breakdown)\n";
+        cout << "5. Phan tich chi tiet Danh Muc Chi nhieu nam (Expense Breakdown)\n";
+        cout << "0. Quay lai\n";
+        cout << "Chon chuc nang: ";
+        cin >> choice;
+
+        if (choice == 1 || choice == 2) {
+            date d1, d2;
+            cout << "Nhap ngay bat dau (d m y): "; cin >> d1.day >> d1.month >> d1.year;
+            cout << "Nhap ngay ket thuc (d m y): "; cin >> d2.day >> d2.month >> d2.year;
+            
+            if (choice == 1) statTimeBased(d1, d2, incomes, expenses);
+            else statWalletBased(d1, d2, incomes, expenses, wallets);
+        }
+        else if (choice == 3) {
+            statAnnualOverview(incomes, expenses);
+        }
+        else if (choice == 4) {
+            incomeAnnualBreakdown(incomes, sources);
+        }
+        else if (choice == 5) {
+            expenseAnnualBreakdown(expenses, categories);
+        }
+
+    } while (choice != 0);
 }
