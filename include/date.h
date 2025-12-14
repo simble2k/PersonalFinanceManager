@@ -8,4 +8,5 @@ struct date
 void printDate(date d);
 date getCurrentDate();
 int monthFromLastSession(date last);
+int compareDate(date d1, date d2);
 #endif

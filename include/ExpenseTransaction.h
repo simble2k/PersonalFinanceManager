@@ -4,7 +4,6 @@
 #include <iostream>
 #include "date.h"
 using namespace std;
-// Struct Giao dịch (Data Model)
 struct ExpenseTransaction {
     date day;
     double amount;
@@ -12,14 +11,13 @@ struct ExpenseTransaction {
     int categoryID;
     int walletID;
 };
-// Class Mảng động
 class ExpenseArray {
 private:
-    ExpenseTransaction* list; // Con trỏ mảng
-    int capacity;            // Sức chứa
-    int count;               // Số lượng hiện tại
+    ExpenseTransaction* list;
+    int capacity;            
+    int count;               
 
-    void resize();           // Hàm nội bộ để mở rộng bộ nhớ
+    void resize();           
 public:
     ExpenseArray(int initialSize = 10);
     ~ExpenseArray();
