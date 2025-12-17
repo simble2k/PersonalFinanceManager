@@ -222,26 +222,45 @@ void runUserMode() {
         case 5: { // QUẢN LÝ ĐỊNH KỲ
              cout << "\n--- CAI DAT GIAO DICH DINH KY ---\n";
              recurringMgr.printRecurringList();
+             
              cout << "\nBan muon them moi khong? (1: Co, 0: Khong): ";
              int rChoice; cin >> rChoice;
+             
              if (rChoice == 1) {
-                 int type; cout << "Loai (1-Thu, 2-Chi): "; cin >> type;
-                 double amt; int idRef, wid; string desc; date start;
+                 int type; 
+                 cout << "Loai (1-Thu, 2-Chi): "; cin >> type;
+                 
+                 double amt; int idRef, wid; string desc; 
+                 date start;
+                 date end = {0, 0, 0}; // Mặc định là vĩnh viễn (Optional)
+
                  cout << "So tien: "; cin >> amt;
                  
-                 // --- Hiển thị danh sách tùy theo loại (Thu hay Chi) ---
+                 // Hiển thị danh sách ID để chọn
                  if(type == 1) printList(sources, "Nguon Thu");
                  else printList(categories, "Danh Muc Chi");
-                 
                  cout << "Nhap ID Nguon/Category: "; cin >> idRef;
                  
                  printList(wallets, "Vi Tien");
                  cout << "Nhap ID Vi: "; cin >> wid;
                  
-                 cout << "Ngay bat dau (d m y): "; cin >> start.day >> start.month >> start.year;
+                 cout << "Ngay bat dau (d m y): "; 
+                 cin >> start.day >> start.month >> start.year;
+                    // --- Nhập ngày kết thúc tùy chọn ---
+                 int hasEnd;
+                 cout << "Co ngay ket thuc khong? (1: Co, 0: Vinh vien): ";
+                 cin >> hasEnd;
+                 
+                 if (hasEnd == 1) {
+                     cout << "Nhap Ngay ket thuc (d m y): ";
+                     cin >> end.day >> end.month >> end.year;
+                 }
+                 // -----------------------------------
+
                  cin.ignore();
                  cout << "Mo ta: "; getline(cin, desc);
-                 recurringMgr.addRecurring((type==1), amt, idRef, wid, desc, start);
+                 
+                 recurringMgr.addRecurring((type==1), amt, idRef, wid, desc, start, end);
              }
              break;
         }

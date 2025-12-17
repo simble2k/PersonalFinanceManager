@@ -7,6 +7,9 @@ test.cpp
 # Saves and databases
 saves/*.dat
 
+# text files
+*.txt
+
 # Prerequisites
 *.d
 
