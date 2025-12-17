@@ -25,10 +25,12 @@ public:
 
     void add(int id, string name);       
     string getName(int id);              
-    void remove(int id);                 
+    void remove(int id);  
+    void editName(int id, string name);           
     void saveToFile(const string &filename);
     void loadFromFile(const string &filename);
     void clear();
+    int* getAllIDs(int& count);
 };
 
 #endif

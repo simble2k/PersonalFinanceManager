@@ -20,7 +20,7 @@ NameTable::~NameTable()
     delete[] table;
 }
 int NameTable::hashFunction(int key){
-    return key % NameTable::capacity;
+    return key % capacity;
 }
 void NameTable::add(int id, string name)
 {
@@ -30,7 +30,7 @@ void NameTable::add(int id, string name)
     {
         if (current->id == id)
         {
-            current->name = name;
+            cout << "[Loi] ID " << id << " da ton tai! Khong the them.\n";
             return;
         }
         current = current->next;
@@ -39,6 +39,7 @@ void NameTable::add(int id, string name)
     Node *newNode = new Node(id, name);
     newNode->next = table[index];
     table[index] = newNode;
+    cout << "=> Da them thanh cong: " << name << " (ID: " << id << ")\n";
 }
 string NameTable::getName(int id)
 {
@@ -128,4 +129,43 @@ void NameTable::clear() {
         table[i] = nullptr;
     }
 }
+void NameTable::editName(int id, string newName) {
+    int index = hashFunction(id);
+    Node* current = table[index];
+    
+    while (current != nullptr) {
+        if (current->id == id) {
+            current->name = newName;
+            cout << "=> Da cap nhat ID " << id << " thanh ten: " << newName << endl;
+            return;
+        }
+        current = current->next;
+    }
+    cout << "[Loi] Khong tim thay ID " << id << " de sua.\n";
+}
+int* NameTable::getAllIDs(int& count) {
+    // 1. Đếm số lượng phần tử trước
+    count = 0;
+    for (int i = 0; i < capacity; i++) {
+        Node* cur = table[i];
+        while (cur != nullptr) {
+            count++;
+            cur = cur->next;
+        }
+    }
 
+    // 2. Cấp phát mảng để chứa ID
+    int* list = new int[count];
+    int index = 0;
+
+    // 3. Đổ dữ liệu vào mảng
+    for (int i = 0; i < capacity; i++) {
+        Node* cur = table[i];
+        while (cur != nullptr) {
+            list[index++] = cur->id;
+            cur = cur->next;
+        }
+    }
+
+    return list; // Trả về mảng (người gọi phải delete[])
+}

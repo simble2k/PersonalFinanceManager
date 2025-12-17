@@ -21,3 +21,8 @@ void statAnnualOverview(IncomeArray& incomes, ExpenseArray& expenses);
 bool isYearSelected(int year, int* selectedYears, int count);
 void incomeAnnualBreakdown(IncomeArray& incomes, IncomeSourceTable& sources);
 void expenseAnnualBreakdown(ExpenseArray& expenses, CategoryTable& categories);
+void statisticMenu(IncomeArray& incomes, ExpenseArray& expenses, 
+                   WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories);
+double getWalletBalance(int walletID, IncomeArray& incomes, ExpenseArray& expenses);
+void viewTransactionHistory(IncomeArray& incomes, ExpenseArray& expenses, 
+                            WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories);
