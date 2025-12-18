@@ -2,6 +2,7 @@
 #include "../include/statistic.h"
 #include <fstream>
 #include <iomanip>
+using namespace std;
 
 // --- Helper: Kiểm tra năm nhuận và số ngày trong tháng ---
 // (Dùng để đảm bảo ngày hợp lệ khi tự động thêm)
@@ -115,7 +116,6 @@ void RecurringManager::processRecurring(IncomeArray& incomes, ExpenseArray& expe
     for (int i = 0; i < count; i++) {
         if (shouldExecute(tasks[i], today)) {
             // Xác định ngày giao dịch: Lấy ngày hiện tại
-            // Lưu ý: Có thể tùy chỉnh để lấy đúng ngày X trong tháng nếu muốn logic phức tạp hơn
             
             string autoDesc = tasks[i].description + " (Auto Monthly)";
             
@@ -128,7 +128,6 @@ void RecurringManager::processRecurring(IncomeArray& incomes, ExpenseArray& expe
                 if (tasks[i].amount > currentBal) {
                     cout << "   [!] BO QUA: Giao dich '" << tasks[i].description 
                          << "' (Vi ID " << tasks[i].walletID << " khong du tien).\n";
-                    // Lưu ý: KHÔNG cập nhật lastExecuted để lần sau mở app nó thử lại
                     continue; 
                 }
 
@@ -182,7 +181,6 @@ void RecurringManager::loadFromFile(const string& filename) {
     ifstream fin(filename, ios::binary);
     if (!fin.is_open()) return;
 
-    // Reset dữ liệu cũ nếu có
     if (count > 0) count = 0;
 
     int fileCount;
@@ -203,11 +201,17 @@ void RecurringManager::loadFromFile(const string& filename) {
 
         int len;
         fin.read((char*)&len, sizeof(int));
-        char* buf = new char[len + 1];
-        fin.read(buf, len);
-        buf[len] = '\0';
-        tasks[count].description = buf;
-        delete[] buf;
+        
+        if (len < 0 || len > 10000) { 
+            tasks[count].description = ""; 
+            // break; 
+        } else {
+            char* buf = new char[len + 1];
+            fin.read(buf, len);
+            buf[len] = '\0';
+            tasks[count].description = buf;
+            delete[] buf;
+        }
 
         count++;
     }

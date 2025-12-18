@@ -81,17 +81,14 @@ void ExpenseArray::saveToFile(const string &filename)
 void ExpenseArray::loadFromFile(const string &filename)
 {
     ifstream fin(filename, ios::binary);
-    if (!fin.is_open())
-    {
-        return;
-    }
+    if (!fin.is_open()) return;
+    
     fin.read(reinterpret_cast<char*>(&count), sizeof(count));
-    if (count > capacity)
-    {
+    if (count > capacity) {
         delete[] list;
         capacity = count;
         list = new ExpenseTransaction[capacity];
-    }   
+    }    
     for (int i = 0; i < count; i++)
     {
         fin.read(reinterpret_cast<char*>(&list[i].day), sizeof(date));
@@ -101,8 +98,14 @@ void ExpenseArray::loadFromFile(const string &filename)
 
         int descLen;
         fin.read(reinterpret_cast<char*>(&descLen), sizeof(descLen));
-        list[i].description.resize(descLen);
-        fin.read(&list[i].description[0], descLen);
+        
+        // FIX: Validate length
+        if (descLen < 0 || descLen > 10000) {
+            list[i].description = "";
+        } else {
+            list[i].description.resize(descLen);
+            fin.read(&list[i].description[0], descLen);
+        }
     }
     fin.close();
 }

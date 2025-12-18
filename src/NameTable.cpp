@@ -101,9 +101,8 @@ void NameTable::saveToFile(const string &filename) {
 }
 void NameTable::loadFromFile(const string &filename) {
     ifstream fin(filename, ios::binary);
-    if (!fin.is_open()) {
-        return;
-    }   
+    if (!fin.is_open()) return; 
+    
     clear();
     int count = 0;  
     fin.read((char*)&count, sizeof(int));
@@ -112,8 +111,14 @@ void NameTable::loadFromFile(const string &filename) {
         int nameLen;
         fin.read((char*)&id, sizeof(int));
         fin.read((char*)&nameLen, sizeof(int));
-        string name(nameLen, '\0');
-        fin.read(&name[0], nameLen);
+        
+        string name;
+        if (nameLen < 0 || nameLen > 10000) {
+            name = "Invalid";
+        } else {
+            name.resize(nameLen);
+            fin.read(&name[0], nameLen);
+        }
         add(id, name);
     }
     fin.close();
@@ -167,5 +172,5 @@ int* NameTable::getAllIDs(int& count) {
         }
     }
 
-    return list; // Trả về mảng (người gọi phải delete[])
+    return list;
 }

@@ -2,17 +2,16 @@
 #define WALLET_H
 #include <string>
 #include "NameTable.h"
-using namespace std;
 
 class WalletTable : public NameTable {
 public:
     WalletTable(int size) : NameTable(size) {}
     
-    void addWallet(int id, string name) {
+    void addWallet(int id, std::string name) {
         add(id, name);
     }
     
-    string getWalletName(int id) {
+    std::string getWalletName(int id) {
         return getName(id);
     }
 };

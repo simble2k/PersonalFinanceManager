@@ -114,7 +114,7 @@ void runUserMode() {
 
     int choice;
     do {
-        // system("cls"); // Bỏ comment nếu chạy trên Windows CMD
+        system("cls"); // Bỏ comment nếu chạy trên Windows CMD
         
         // 1. HIỂN THỊ DASHBOARD (Yêu cầu UI)
         printDashboard(wallets, incomes, expenses);

@@ -3,18 +3,16 @@
 
 #include <string>
 #include "NameTable.h"
-using namespace std;
-
 class IncomeSourceTable : public NameTable {
 
 public:
     IncomeSourceTable(int size) : NameTable(size) {}
     
-    void insertSource(int id, string name) {
+    void insertSource(int id, std::string name) {
         add(id, name);
     }
     
-    string getSourceName(int id) {
+    std::string getSourceName(int id) {
         return getName(id);
     }
 };

@@ -4,13 +4,11 @@
 #include <string>
 #include <iostream>
 #include "date.h"
-using namespace std;
-
 // Struct Giao dịch (Data Model)
 struct IncomeTransaction {
     date day;
     double amount;
-    string description;
+    std::string description;
     int sourceID;
     int walletID;
 };
@@ -28,13 +26,13 @@ public:
     IncomeArray(int initialSize = 10);
     ~IncomeArray();
 
-    void addTransaction(date day, double amount, int sourceID, int walletID, string desc);
+    void addTransaction(date day, double amount, int sourceID, int walletID, std::string desc);
     int getCount();
     IncomeTransaction getAt(int index);
     double getTotalIncome(); // Hàm thống kê
 
-    void saveToFile(const string &filename);
-    void loadFromFile(const string &filename);
+    void saveToFile(const std::string &filename);
+    void loadFromFile(const std::string &filename);
 };
 
 #endif

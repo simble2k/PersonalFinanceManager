@@ -82,14 +82,10 @@ void IncomeArray::saveToFile(const string &filename)
 void IncomeArray::loadFromFile(const string &filename)
 {
     ifstream fin(filename, ios::binary);
-    if (!fin.is_open())
-    {
-        cerr << "Error opening file for reading: " << filename << endl;
-        return;
-    }
+    if (!fin.is_open()) return;
+    
     fin.read((char*)&count, sizeof(int));
-    if (count > capacity)
-    {
+    if (count > capacity) {
         delete[] list;
         capacity = count;
         list = new IncomeTransaction[capacity];
@@ -103,8 +99,13 @@ void IncomeArray::loadFromFile(const string &filename)
 
         int descLen;
         fin.read((char*)&descLen, sizeof(int));
-        list[i].description.resize(descLen);
-        fin.read(&list[i].description[0], descLen);
+        
+        if (descLen < 0 || descLen > 10000) {
+            list[i].description = "";
+        } else {
+            list[i].description.resize(descLen);
+            fin.read(&list[i].description[0], descLen);
+        }
     }
     fin.close();
 }

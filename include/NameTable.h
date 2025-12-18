@@ -4,13 +4,12 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-using namespace std;
 
 struct Node {
     int id;
-    string name;
+    std::string name;
     Node* next;
-    Node(int id, string name) : id(id), name(name), next(nullptr) {}
+    Node(int id, std::string name) : id(id), name(name), next(nullptr) {}
 };
 
 class NameTable {
@@ -23,12 +22,12 @@ public:
     NameTable(int size);
     virtual ~NameTable(); 
 
-    void add(int id, string name);       
-    string getName(int id);              
+    void add(int id, std::string name);       
+    std::string getName(int id);              
     void remove(int id);  
-    void editName(int id, string name);           
-    void saveToFile(const string &filename);
-    void loadFromFile(const string &filename);
+    void editName(int id, std::string name);           
+    void saveToFile(const std::string &filename);
+    void loadFromFile(const std::string &filename);
     void clear();
     int* getAllIDs(int& count);
 };

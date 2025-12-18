@@ -3,11 +3,10 @@
 #include <string>
 #include <iostream>
 #include "date.h"
-using namespace std;
 struct ExpenseTransaction {
     date day;
     double amount;
-    string description;
+    std::string description;
     int categoryID;
     int walletID;
 };
@@ -21,11 +20,11 @@ private:
 public:
     ExpenseArray(int initialSize = 10);
     ~ExpenseArray();
-    void addTransaction(date day, double amount, int categoryID, int walletID, string desc);
+    void addTransaction(date day, double amount, int categoryID, int walletID, std::string desc);
     int getCount();
     ExpenseTransaction getAt(int index);
     double getTotalExpense(); // Hàm thống kê
-    void saveToFile(const string &filename);
-    void loadFromFile(const string &filename);
+    void saveToFile(const std::string &filename);
+    void loadFromFile(const std::string &filename);
 };
 #endif  

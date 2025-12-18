@@ -7,8 +7,6 @@
 #include "IncomeTransaction.h"
 #include "ExpenseTransaction.h"
 
-using namespace std;
-
 // Cấu trúc một tác vụ định kỳ
 struct RecurringTask {
     int id;                 // ID quản lý
@@ -16,7 +14,7 @@ struct RecurringTask {
     double amount;          // Số tiền
     int categoryOrSourceID; // ID Nguồn (nếu thu) hoặc Danh mục (nếu chi)
     int walletID;           // ID Ví
-    string description;     // Mô tả (VD: Tien thue nha)
+    std::string description;     // Mô tả (VD: Tien thue nha)
     
     date startDate;         // Ngày bắt đầu hiệu lực
     date endDate;           // Ngày kết thúc (nếu year=0 coi như vĩnh viễn)
@@ -41,15 +39,15 @@ public:
 
     // Thêm một cấu hình định kỳ mới
     void addRecurring(bool isIncome, double amount, int catSrcID, int walletID, 
-                      string desc, date start, date end = {0,0,0});
+                      std::string desc, date start, date end = {0,0,0});
 
     // Hàm QUAN TRỌNG NHẤT: Quét và tự động thêm giao dịch
     // Cần truyền tham chiếu IncomeArray và ExpenseArray để thêm dữ liệu vào đó
     void processRecurring(IncomeArray& incomes, ExpenseArray& expenses);
 
     // Lưu và Đọc file (để nhớ trạng thái lastExecuted)
-    void saveToFile(const string& filename);
-    void loadFromFile(const string& filename);
+    void saveToFile(const std::string& filename);
+    void loadFromFile(const std::string& filename);
     
     // Debug: Xem danh sách đang cài đặt
     void printRecurringList();

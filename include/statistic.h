@@ -1,3 +1,5 @@
+#ifndef STATISTIC_H
+#define STATISTIC_H
 #include <iostream>
 #include <iomanip>
 #include "date.h"
@@ -7,8 +9,6 @@
 #include "Category.h"
 #include "IncomeSourceTable.h"
 
-//Dùng để lưu tạm chi/tiêu theo wallet/category/source
-#pragma once
 struct StatRecord {
     int id;         // ID của Wallet, Category, hoặc Source
     double amount;  // Tổng tiền
@@ -26,3 +26,4 @@ void statisticMenu(IncomeArray& incomes, ExpenseArray& expenses,
 double getWalletBalance(int walletID, IncomeArray& incomes, ExpenseArray& expenses);
 void viewTransactionHistory(IncomeArray& incomes, ExpenseArray& expenses, 
                             WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories);
+#endif
