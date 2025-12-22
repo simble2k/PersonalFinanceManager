@@ -128,6 +128,7 @@ void RecurringManager::processRecurring(IncomeArray& incomes, ExpenseArray& expe
                 if (tasks[i].amount > currentBal) {
                     cout << "   [!] BO QUA: Giao dich '" << tasks[i].description 
                          << "' (Vi ID " << tasks[i].walletID << " khong du tien).\n";
+                         
                     // Lưu ý: KHÔNG cập nhật lastExecuted để lần sau mở app nó thử lại
                     continue; 
                 }
@@ -148,6 +149,11 @@ void RecurringManager::processRecurring(IncomeArray& incomes, ExpenseArray& expe
     } else {
         cout << "   => Da tu dong them " << runCount << " giao dich.\n";
     }
+}
+
+RecurringTask RecurringManager::getAt(int index) const {
+    if (index < 0 || index >= count) return RecurringTask{};
+    return tasks[index];
 }
 
 // 7. Lưu file (Binary)

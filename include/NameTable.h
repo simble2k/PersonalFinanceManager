@@ -20,7 +20,7 @@ protected:
     int hashFunction(int key);
 
 public:
-    NameTable(int size);
+    NameTable(int size = 10);  // Default size of 10 for hash table buckets
     virtual ~NameTable(); 
 
     void add(int id, string name);       

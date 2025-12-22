@@ -43,6 +43,9 @@ public:
     void addRecurring(bool isIncome, double amount, int catSrcID, int walletID, 
                       string desc, date start, date end = {0,0,0});
 
+    int getCount() const { return count; }
+    RecurringTask getAt(int index) const;
+
     // Hàm QUAN TRỌNG NHẤT: Quét và tự động thêm giao dịch
     // Cần truyền tham chiếu IncomeArray và ExpenseArray để thêm dữ liệu vào đó
     void processRecurring(IncomeArray& incomes, ExpenseArray& expenses);
