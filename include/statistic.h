@@ -40,6 +40,7 @@ struct StatRecord {
 void updateStatRecord(StatRecord* records, int& count, int id, double amount);
 TimeReport getStatTimeBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArray& expenses);
 WalletStatRecord* IncWalletBased(date fromDate, date toDate, IncomeArray& incomes, WalletTable& wallets, int& count);
+WalletStatRecord* ExpWalletBased(date fromDate, date toDate, ExpenseArray& expenses, WalletTable& wallets, int& count);
 TimeReport getAnnualOverview(int* selectedYears, int n, IncomeArray& incomes, ExpenseArray& expenses);
 bool isYearSelected(int year, int* selectedYears, int count);
 BreakdownReport incomeAnnualBreakdown(int* selectedYears, int n, IncomeArray& incomes, IncomeSourceTable& sources);
