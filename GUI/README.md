@@ -51,7 +51,7 @@ Notes:
 - The program reads/writes persistent data in the `saves/` folder. If you want a fresh start, remove or move the `saves/` files.
 
 ## Running on Windows (prebuilt .exe)
-A Windows build may exist under `build/Debug/PersonalFinanceManager.exe` if the project was built for Windows previously. Run it on Windows with the DLLs in the same folder.
+A Windows build exist under `build/Debug/PersonalFinanceManager.exe` 
 
 ## Building from source (macOS)
 Prerequisites
