@@ -32,6 +32,9 @@ saves/*.dat
 *.dylib
 *.dll
 
+# Allow shipping runtime DLLs in prebuild
+!prebuild/*.dll
+
 # Fortran module files
 *.mod
 *.smod
@@ -46,6 +49,9 @@ saves/*.dat
 *.exe
 *.out
 *.app
+
+# Allow prebuilt Windows exe
+!prebuild/*.exe
 
 # debug information files
 *.dwo
