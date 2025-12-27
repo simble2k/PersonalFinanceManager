@@ -1,5 +1,6 @@
 # Build files
 .vscode/
+.github/
 
 # Test files
 test.cpp

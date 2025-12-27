@@ -1,3 +1,0 @@
-/Users/nguyenbaro/Library/CloudStorage/GoogleDrive-quocbaonguyenakabaro07@gmail.com/Other computers/My Computer/Documents/CS160 FinalProject/PersonalFinanceManager/build/CMakeFiles/PersonalFinanceManager.dir
-/Users/nguyenbaro/Library/CloudStorage/GoogleDrive-quocbaonguyenakabaro07@gmail.com/Other computers/My Computer/Documents/CS160 FinalProject/PersonalFinanceManager/build/CMakeFiles/edit_cache.dir
-/Users/nguyenbaro/Library/CloudStorage/GoogleDrive-quocbaonguyenakabaro07@gmail.com/Other computers/My Computer/Documents/CS160 FinalProject/PersonalFinanceManager/build/CMakeFiles/rebuild_cache.dir
