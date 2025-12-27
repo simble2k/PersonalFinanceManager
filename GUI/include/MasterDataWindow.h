@@ -26,7 +26,7 @@ public:
 private:
     // Selection focus enum
     enum class Focus { None, Wallet, Source, Category };
-    enum class FormMode { Add, Edit };
+    enum class FormMode { AddWallet, AddSource, AddCategory, EditWallet, EditSource, EditCategory };
 
     // UI components
     ScrollArea walletArea_;
@@ -43,9 +43,10 @@ private:
     Dialog confirmDialog_;
     bool showFormDialog_ = false;
     bool showConfirmDialog_ = false;
-    FormMode formMode_ = FormMode::Add;
+    FormMode formMode_ = FormMode::AddWallet;
     Focus formTarget_ = Focus::Wallet;
     int editOriginalId_ = -1;
+    Rectangle formDialogRect_ {0,0,0,0};
 
     Rectangle walletCol_ {0,0,0,0};
     Rectangle sourceCol_ {0,0,0,0};
@@ -62,14 +63,13 @@ private:
 
     bool initialized_ = false;
 
+    int errorID_ = -1;
+
     // Selection state
     int selectedWalletId_ = -1;
     int selectedSourceId_ = -1;
     int selectedCategoryId_ = -1;
     Focus focus_ = Focus::None;
-
-    std::string status_;
-    Color statusColor_ = DARKGRAY;
 
     // Layout helpers
     void DrawColumns(DataManager& dataManager);
@@ -77,8 +77,6 @@ private:
     void DrawSourcesAndCategories();
     void DrawTransactions();
     void ClearSelectionsBelowWallet();
-
-    void SetStatus(const std::string& msg, Color color);
 
     // Mutations
     int NextId(NameTable& table) const;

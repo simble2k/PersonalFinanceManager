@@ -67,6 +67,9 @@ void TransactionWindow::Init() {
     // Setup text inputs and buttons (positions are relative to dialog origin)
     addIncomeDialog.AddTextInput(dialogBoxes[2].x, dialogBoxes[2].y, dialogBoxes[2].width, dialogBoxes[2].height, "Amount");
     addIncomeDialog.AddTextInput(dialogBoxes[3].x, dialogBoxes[3].y, dialogBoxes[3].width, dialogBoxes[3].height, "Description");
+    // Character caps
+    addIncomeDialog.SetInputMaxLength(INCOME_AMOUNT_IDX, 20);
+    addIncomeDialog.SetInputMaxLength(INCOME_DESC_IDX, 120);
 
     addIncomeDialog.AddButton(incomeDialogRect.width - 220, incomeDialogRect.height - 70, 100, 46, "Add",
                               GREEN, DARKGREEN, WHITE, [this]() { SubmitIncome(); });
@@ -77,6 +80,9 @@ void TransactionWindow::Init() {
                               addExpenseDialog = Dialog(expenseDialogRect.x, expenseDialogRect.y, expenseDialogRect.width, expenseDialogRect.height, "Add Expense");
     addExpenseDialog.AddTextInput(dialogBoxes[2].x, dialogBoxes[2].y, dialogBoxes[2].width, dialogBoxes[2].height, "Amount");
     addExpenseDialog.AddTextInput(dialogBoxes[3].x, dialogBoxes[3].y, dialogBoxes[3].width, dialogBoxes[3].height, "Description");
+    // Character caps
+    addExpenseDialog.SetInputMaxLength(EXPENSE_AMOUNT_IDX, 20);
+    addExpenseDialog.SetInputMaxLength(EXPENSE_DESC_IDX, 120);
     addExpenseDialog.AddButton(expenseDialogRect.width - 220, expenseDialogRect.height - 70, 100, 46, "Add",
                                GREEN, DARKGREEN, WHITE, [this]() { SubmitExpense(); });
     addExpenseDialog.AddButton(expenseDialogRect.width - 110, expenseDialogRect.height - 70, 100, 46, "Cancel",
@@ -103,9 +109,12 @@ void TransactionWindow::Init() {
 void TransactionWindow::Update() {
     if (!initialized) Init();
 
-    backBtn.Update();
-    addIncomeBtn.Update();
-    addExpenseBtn.Update();
+    // Only update buttons if no dialog is open
+    if (!showAddIncomeDialog && !showAddExpenseDialog && !showConfirmDialog) {
+        backBtn.Update();
+        addIncomeBtn.Update();
+        addExpenseBtn.Update();
+    }
 
     if (showAddIncomeDialog) {
         addIncomeDialog.Update();
@@ -327,6 +336,7 @@ void TransactionWindow::OpenIncomeDialog() {
     addIncomeDialog.Open();
     showAddIncomeDialog = true;
     confirmingIncome = true;
+    errorID = -1;
 
     // Setup dropdowns
     incomeWalletDropdown = std::make_unique<Dropdown>(incomeDialogRect.x + dialogBoxes[0].x,
@@ -349,6 +359,7 @@ void TransactionWindow::OpenExpenseDialog() {
     addExpenseDialog.Open();
     showAddExpenseDialog = true;
     confirmingIncome = false;
+    errorID = -1;
 
     expenseWalletDropdown = std::make_unique<Dropdown>(expenseDialogRect.x + dialogBoxes[0].x,
                                                       expenseDialogRect.y + dialogBoxes[0].y,
@@ -373,14 +384,12 @@ void TransactionWindow::SubmitIncome() {
     try {
         amount = std::stod(amtText);
     } catch (...) {
-        ShowConfirm("Invalid amount format.");
+        errorID = 1; // amount invalid
         return;
     }
 
-    if (walletId < 0 || sourceId < 0) {
-        ShowConfirm("Please choose wallet and source.");
-        return;
-    }
+    if (walletId < 0) { errorID = 4; return; } // wallet not selected
+    if (sourceId < 0) { errorID = 5; return; } // source not selected
 
     date today = getCurrentDate();
     dataManagerRef->incomes_.addTransaction(today, amount, sourceId, walletId, desc);
@@ -390,6 +399,7 @@ void TransactionWindow::SubmitIncome() {
     addIncomeDialog.Close();
     showAddIncomeDialog = false;
     confirmingIncome = true;
+    errorID = -1;
     ShowConfirm("Income added.");
 }
 
@@ -406,14 +416,12 @@ void TransactionWindow::SubmitExpense() {
     try {
         amount = std::stod(amtText);
     } catch (...) {
-        ShowConfirm("Invalid amount format.");
+        errorID = 1; // amount invalid
         return;
     }
 
-    if (walletId < 0 || categoryId < 0) {
-        ShowConfirm("Please choose wallet and category.");
-        return;
-    }
+    if (walletId < 0) { errorID = 4; return; } // wallet not selected
+    if (categoryId < 0) { errorID = 6; return; } // category not selected
 
     date today = getCurrentDate();
     dataManagerRef->expenses_.addTransaction(today, amount, categoryId, walletId, desc);
@@ -423,6 +431,7 @@ void TransactionWindow::SubmitExpense() {
     addExpenseDialog.Close();
     showAddExpenseDialog = false;
     confirmingIncome = false;
+    errorID = -1;
     ShowConfirm("Expense added.");
 }
 
@@ -431,6 +440,7 @@ void TransactionWindow::CloseDialogs() {
     showAddExpenseDialog = false;
     addIncomeDialog.Close();
     addExpenseDialog.Close();
+    errorID = -1;
 }
 
 void TransactionWindow::ShowConfirm(const std::string& message) {
@@ -448,13 +458,20 @@ void TransactionWindow::DrawAddIncomeDialog() {
     int descLabelY = (int)(incomeDialogRect.y + dialogBoxes[3].y - 26);
 
     DrawText("Wallet", (int)(incomeDialogRect.x + dialogBoxes[0].x), walletLabelY, 20, DARKGRAY);
-    if (incomeWalletDropdown) incomeWalletDropdown->Draw();
+    if (incomeWalletDropdown) incomeWalletDropdown->DrawBase();
 
     DrawText("Income source", (int)(incomeDialogRect.x + dialogBoxes[1].x), sourceLabelY, 20, DARKGRAY);
-    if (incomeSourceDropdown) incomeSourceDropdown->Draw();
+    if (incomeSourceDropdown) incomeSourceDropdown->DrawBase();
 
     DrawText("Amount", (int)(incomeDialogRect.x + dialogBoxes[2].x), amountLabelY, 20, DARKGRAY);
     DrawText("Description", (int)(incomeDialogRect.x + dialogBoxes[3].x), descLabelY, 20, DARKGRAY);
+
+    // Draw dropdown overlays last so they sit above labels/fields
+    if (incomeWalletDropdown) incomeWalletDropdown->DrawListOverlay();
+    if (incomeSourceDropdown) incomeSourceDropdown->DrawListOverlay();
+
+    // Error indicator
+    DrawFormErrorTextIndicator(addIncomeDialog.GetRect(), errorID);
 }
 
 void TransactionWindow::DrawAddExpenseDialog() {
@@ -466,13 +483,19 @@ void TransactionWindow::DrawAddExpenseDialog() {
     int descLabelY = (int)(expenseDialogRect.y + dialogBoxes[3].y - 26);
 
     DrawText("Wallet", (int)(expenseDialogRect.x + dialogBoxes[0].x), walletLabelY, 20, DARKGRAY);
-    if (expenseWalletDropdown) expenseWalletDropdown->Draw();
+    if (expenseWalletDropdown) expenseWalletDropdown->DrawBase();
 
     DrawText("Category", (int)(expenseDialogRect.x + dialogBoxes[1].x), categoryLabelY, 20, DARKGRAY);
-    if (expenseCategoryDropdown) expenseCategoryDropdown->Draw();
+    if (expenseCategoryDropdown) expenseCategoryDropdown->DrawBase();
 
     DrawText("Amount", (int)(expenseDialogRect.x + dialogBoxes[2].x), amountLabelY, 20, DARKGRAY);
     DrawText("Description", (int)(expenseDialogRect.x + dialogBoxes[3].x), descLabelY, 20, DARKGRAY);
+
+    if (expenseWalletDropdown) expenseWalletDropdown->DrawListOverlay();
+    if (expenseCategoryDropdown) expenseCategoryDropdown->DrawListOverlay();
+
+    // Error indicator
+    DrawFormErrorTextIndicator(addExpenseDialog.GetRect(), errorID);
 }   
 
 void TransactionWindow::DrawConfirmDialog() {

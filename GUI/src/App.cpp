@@ -32,6 +32,11 @@ bool App::Init() {
         currentScreen = DASHBOARD;
     });
 
+    statisticWindow_.BindDataManager(&dataManager_);
+    statisticWindow_.SetOnBack([this]() {
+        currentScreen = DASHBOARD;
+    });
+
     // success
     return true;
 }
@@ -47,11 +52,16 @@ void App::Update(float dt) {
     if (currentScreen == MASTER && masterWindowInitialized) {
         masterWindow_.Update();
     }
+    if (currentScreen == STATISTICS && statisticWindowInitialized) {
+        statisticWindow_.Update();
+    }
 }
 
 void App::Draw() {
     switch (currentScreen) {
     case DASHBOARD:
+        // Refresh wallet data when showing dashboard
+        data_ = dataManager_.GetWalletsData();
         drawDashboard(data_, [this](int index) {
             if (index == 0) { // Add Transaction
                 if (!transactionWindowInitialized) {
@@ -59,6 +69,13 @@ void App::Draw() {
                     transactionWindowInitialized = true;
                 }
                 currentScreen = TRANSACTION;
+            }
+            if (index == 1) { // Reports & Statistics
+                if (!statisticWindowInitialized) {
+                    statisticWindow_.Init();
+                    statisticWindowInitialized = true;
+                }
+                currentScreen = STATISTICS;
             }
             if (index == 2) { // Master Data Center
                 if (!masterWindowInitialized) {
@@ -73,6 +90,9 @@ void App::Draw() {
                     recurringWindowInitialized = true;
                 }
                 currentScreen = RECURRING;
+            }
+            if(index == 4) { // EXIT Application
+                CloseWindow();
             }
         });
         break;
@@ -89,6 +109,11 @@ void App::Draw() {
     case MASTER:
         if (masterWindowInitialized) {
             masterWindow_.Draw(dataManager_);
+        }
+        break;
+    case STATISTICS:
+        if (statisticWindowInitialized) {
+            statisticWindow_.Draw(dataManager_);
         }
         break;
     }

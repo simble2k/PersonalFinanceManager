@@ -14,7 +14,10 @@ public:
 
     // Update and draw
     void Update();
+    // Draw the control; call DrawBase() then DrawListOverlay() when you need overlay on top of other elements
     void Draw();
+    void DrawBase();
+    void DrawListOverlay();
 
     // Getters
     bool IsOpen() const { return isOpen_; }

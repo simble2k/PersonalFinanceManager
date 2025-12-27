@@ -21,14 +21,22 @@ int main() {
 
     while (!WindowShouldClose()) {
         float dt = GetFrameTime();
+    
+        // Update app state per frame
         app.Update(dt);
 
+        // Prepare frame
         BeginDrawing();
         ClearBackground(RAYWHITE);
+
+        // Draw UI
         app.Draw();
+
+        // Finalize frame
         EndDrawing();
     }
 
+    // Cleanup
     app.Shutdown();
     CloseWindow();
     return 0;

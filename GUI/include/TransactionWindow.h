@@ -63,6 +63,9 @@ private:
     DataManager* dataManagerRef = nullptr;
     std::function<void()> onBackRequested; // callback for back button
 
+    // Error indicator for add dialogs (-1 = none)
+    int errorID = -1;
+
     static const int INCOME_AMOUNT_IDX = 0;// Amount is first input
     static const int INCOME_DESC_IDX = 1; // Description is second input
     static const int EXPENSE_AMOUNT_IDX = 0; // Amount is first input

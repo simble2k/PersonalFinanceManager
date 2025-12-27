@@ -9,6 +9,4 @@
 #include "raylib.h"
 #include "DataManager.h"  // For WalletsData
 
-using namespace std;
-
 void drawDashboard(const WalletsData& data, std::function<void(int)> onButtonClick = nullptr);

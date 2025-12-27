@@ -28,6 +28,7 @@ set(SOURCE_FILES
     GUI/src/ScrollArea.cpp
     GUI/src/TextInput.cpp
     GUI/src/RecurringWindow.cpp
+    GUI/src/StatisticWindow.cpp
     GUI/src/TransactionWindow.cpp
     GUI/src/dashboard.cpp
     GUI/mainGUI.cpp

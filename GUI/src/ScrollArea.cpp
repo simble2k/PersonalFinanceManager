@@ -23,6 +23,7 @@ void ScrollArea::Update(float newContentHeight) {
     if (contentHeight <= view.height) {
         offset = 0.0f;
     } else {
+
         offset = clampf(offset, 0.0f, contentHeight - view.height);
     }
 

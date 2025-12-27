@@ -79,7 +79,27 @@ WalletsData DataManager::GetWalletsData() {
         int id = ids[i];
         std::string name = wallets_.getName(id);
         
-        double balance = 0.0; // TODO: Compute actual balance from incomes/expenses for this wallet
+        // Compute actual balance from incomes/expenses for this wallet
+        double balance = 0.0;
+        
+        // Add all incomes for this wallet
+        int incomeCount = incomes_.getCount();
+        for (int j = 0; j < incomeCount; ++j) {
+            IncomeTransaction it = incomes_.getAt(j);
+            if (it.walletID == id) {
+                balance += it.amount;
+            }
+        }
+        
+        // Subtract all expenses for this wallet
+        int expenseCount = expenses_.getCount();
+        for (int j = 0; j < expenseCount; ++j) {
+            ExpenseTransaction et = expenses_.getAt(j);
+            if (et.walletID == id) {
+                balance -= et.amount;
+            }
+        }
+        
         walletArray[i] = Wallet(name, balance);
         totalBalance += balance; // Sum wallet balances
     }

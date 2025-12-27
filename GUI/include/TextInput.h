@@ -14,6 +14,7 @@ public:
     std::string GetText() const { return text_; }
     void SetText(const std::string& text) { text_ = text; }
     void Clear() { text_.clear(); cursorPos_ = 0; }
+    void SetMaxLength(int maxLen) { maxLength_ = maxLen; }
 
 private:
     Rectangle rect_; // text box
@@ -23,4 +24,7 @@ private:
 
     int cursorPos_; // cursor position in text
     bool isActive_; // active when clicked
+
+    // Maximum character count; negative means unlimited
+    int maxLength_ = -1;
 };

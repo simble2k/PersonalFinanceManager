@@ -19,6 +19,7 @@ namespace LayoutHelper {
         return (float)MeasureText(text.c_str(), fontSize);
     }
 
+    // Creates a grid of rectangles 
     Rectangle* CreateGrid(float startX, float startY, int rows, int cols, float cellW, float cellH, float spacing) {
         int totalRects = rows * cols;
         Rectangle* rects = new Rectangle[totalRects];

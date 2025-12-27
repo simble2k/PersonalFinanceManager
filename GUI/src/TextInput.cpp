@@ -1,7 +1,5 @@
 #include "../include/TextInput.h"
 
-#include <algorithm>
-
 TextInput::TextInput() : rect_{0, 0, 0, 0}, placeholder_(""), cursorPos_(0), isActive_(false) {}
 
 TextInput::TextInput(float x, float y, float width, float height, const std::string& placeholder)
@@ -25,8 +23,25 @@ void TextInput::Update() {
         int key = GetCharPressed(); //Get keyboard input
         while (key > 0) {
             if (key >= 32 && key <= 125) {  // Accept printable characters
-                text_.insert(cursorPos_, 1, (char)key); // Add char to "text_" string at cursor position
-                cursorPos_++;
+                // Enforce character cap if set
+                if (maxLength_ >= 0 && (int)text_.size() >= maxLength_) {
+                    key = GetCharPressed();
+                    continue; // ignore input beyond cap
+                }
+
+                // Only insert if the resulting text fits within the box width
+                const int fontSize = 20;
+                const int padding = 10; // left+right padding used in Draw()
+                int maxWidth = (int)(rect_.width - padding);
+
+                std::string candidate = text_;
+                candidate.insert(cursorPos_, 1, (char)key);
+                int width = MeasureText(candidate.c_str(), fontSize);
+                if (width <= maxWidth) {
+                    text_.insert(cursorPos_, 1, (char)key);
+                    cursorPos_++;
+                }
+                // else: ignore input that would overflow horizontally
             }
             key = GetCharPressed();
         }

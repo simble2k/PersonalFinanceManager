@@ -32,6 +32,7 @@ private:
     Button addIncomeBtn_;
     Button addExpenseBtn_;
     Dialog addDialog_;
+    Dialog confirmDialog_;
 
     // Input layout grid (allocated in Init, freed in destructor)
     Rectangle* inputGrid_ = nullptr;
@@ -45,7 +46,11 @@ private:
 
     bool initialized_ = false;
     bool showAddDialog_ = false;
+    bool showConfirmDialog_ = false;
     bool addingIncome_ = true;
+    bool lastWasIncome_ = true;
+
+    int errorID_ = -1;
 
     static const int INPUT_AMOUNT_IDX = 0;
     static const int INPUT_DESC_IDX = 1;
@@ -54,23 +59,22 @@ private:
 
     DataManager* dataManager_ = nullptr;
     std::function<void()> onBackRequested_;
-
-    std::string statusMessage_;
-    Color statusColor_ = DARKGRAY;
+    std::string confirmMessage_;
 
     // Helpers
     void OpenIncomeDialog();
     void OpenExpenseDialog();
     void CloseDialog();
     void SubmitRecurring();
+    void ShowConfirm(const std::string& message);
 
     void PopulateWalletDropdown(Dropdown& dropdown);
     void PopulateSourceDropdown(Dropdown& dropdown);
     void PopulateCategoryDropdown(Dropdown& dropdown);
 
-    bool ParseDate(const std::string& text, date& out, bool allowEmpty = false);
     std::string FormatDate(const date& d) const;
     
     void DrawAddDialog();
+    void DrawConfirmDialog();
     void DrawList(DataManager& dataManager);
 };

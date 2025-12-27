@@ -23,6 +23,7 @@ public:
 
     // Set text of a specific input (by index)
     void SetInputText(int index, const std::string& text);
+    void SetInputMaxLength(int index, int maxLen);
 
     Rectangle GetRect() const { return rect_; }
 

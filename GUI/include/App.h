@@ -6,12 +6,14 @@
 #include "dashboard.h"
 #include "RecurringWindow.h"
 #include "MasterDataWindow.h"
+#include "StatisticWindow.h"
 
 enum Screen { // Active screen
     DASHBOARD,
     TRANSACTION,
     RECURRING,
-    MASTER
+    MASTER,
+    STATISTICS
 };
 
 class App {
@@ -37,9 +39,11 @@ private:
     TransactionWindow transactionWindow_;
     RecurringWindow recurringWindow_;
     MasterDataWindow masterWindow_;
+    StatisticWindow statisticWindow_;
     Screen currentScreen = DASHBOARD; // Start at dashboard
 
     bool transactionWindowInitialized = false;
     bool recurringWindowInitialized = false;
     bool masterWindowInitialized = false;
+    bool statisticWindowInitialized = false;
 };

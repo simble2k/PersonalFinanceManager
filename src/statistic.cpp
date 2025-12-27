@@ -8,20 +8,25 @@
 #include "IncomeSourceTable.h"
 #include "statistic.h"
 
-using namespace std;
-
+// Helper to update or add a StatRecord in an array
 void updateStatRecord(StatRecord* records, int& count, int id, double amount) {
+
+    // Check if record exists
     for (int i = 0; i < count; i++) {
+        // If found, update the amount
         if (records[i].id == id) {
             records[i].amount += amount;
             return;
         }
     }
+
+    // Not found, add new record
     records[count].id = id;
     records[count].amount = amount;
     count++;
 }
 
+//Time Based and Overall
 void statTimeBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArray& expenses) {
     double totalInc = 0;
     double totalExp = 0;
@@ -50,7 +55,7 @@ void statTimeBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArra
 
 //Time & Wallet Based
 void statWalletBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArray& expenses, WalletTable& wallets) {
-    StatRecord* walletIncs = new StatRecord[100];
+    StatRecord* walletIncs = new StatRecord[100]; 
     StatRecord* walletExps = new StatRecord[100];
     int countInc = 0;
     int countExp = 0;
@@ -69,9 +74,8 @@ void statWalletBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseAr
         }
     }
 
-
-
-    cout << "\n--- CHI TIET THEO VI (WALLET) ---\n";
+    // In báo cáo
+    cout << "\n--- CHI TIET THEO VI (WALLET) ---\n  ";
     cout << left << setw(25) << "Ten Vi" 
          << right << setw(15) << "Thu Vao" 
          << right << setw(15) << "Chi Ra" << endl;
@@ -105,6 +109,7 @@ bool isYearSelected(int year, int* selectedYears, int count) {
     return false;
 }
 
+//Overall Annual Overview
 void statAnnualOverview(IncomeArray& incomes, ExpenseArray& expenses) {
     int n;
     cout << "\n--- TONG QUAN TAI CHINH THEO NAM ---\n";
@@ -217,6 +222,7 @@ void incomeAnnualBreakdown(IncomeArray& incomes, IncomeSourceTable& sources) {
     delete[] records;
 }
 
+//Expense annually Category-Based
 void expenseAnnualBreakdown(ExpenseArray& expenses, CategoryTable& categories) {
     int n;
     cout << "\n--- PHAN TICH CHI TIEU THEO DANH MUC ---\n";
@@ -270,15 +276,19 @@ void expenseAnnualBreakdown(ExpenseArray& expenses, CategoryTable& categories) {
     delete[] records;
 }
 
-void statisticMenu(IncomeArray& incomes, ExpenseArray& expenses, 
+//Main Statistic Menu
+void statisticMenu(IncomeArray& incomes, ExpenseArray& expenses,
                    WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories) {
+    
+    // Menu loop
     int choice;
+
     do {
         cout << "\n=== STATISTICS & REPORTING ===\n";
         cout << "1. Xem Lich su giao dich chi tiet (Transaction Log)\n"; // <--- MỚI
         cout << "2. Thong ke theo khoang thoi gian (Time-based)\n";
         cout << "3. Thong ke chi tiet theo Vi (Wallet-based)\n";
-        cout << "4. Tong quan Thu/Chi nhieu nam (Overview)\n"; 
+        cout << "4. Tong quan Thu/Chi nhieu nam (Overview)\n";
         cout << "5. Phan tich Nguon Thu (Income Breakdown)\n";
         cout << "6. Phan tich Danh Muc Chi (Expense Breakdown)\n";
         cout << "0. Quay lai\n";
@@ -286,7 +296,7 @@ void statisticMenu(IncomeArray& incomes, ExpenseArray& expenses,
         cin >> choice;
 
         switch(choice) {
-            case 1: 
+            case 1:
                 viewTransactionHistory(incomes, expenses, wallets, sources, categories);
                 break;
             case 2:
@@ -301,6 +311,8 @@ void statisticMenu(IncomeArray& incomes, ExpenseArray& expenses,
         }
     } while (choice != 0);
 }
+
+//Calculate Wallet Balance
 double getWalletBalance(int walletID, IncomeArray& incomes, ExpenseArray& expenses) {
     double totalIncome = 0;
     double totalExpense = 0;
@@ -321,7 +333,9 @@ double getWalletBalance(int walletID, IncomeArray& incomes, ExpenseArray& expens
 
     return totalIncome - totalExpense;
 }
-void viewTransactionHistory(IncomeArray& incomes, ExpenseArray& expenses, 
+
+//View Detailed Transaction History
+void viewTransactionHistory(IncomeArray& incomes, ExpenseArray& expenses,
                             WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories) {
     
     cout << "\n================ LICH SU GIAO DICH CHI TIET ================\n";
@@ -352,6 +366,7 @@ void viewTransactionHistory(IncomeArray& incomes, ExpenseArray& expenses,
         }
     }
 
+    
     // 2. IN DANH SÁCH CHI TIÊU
     cout << "\n--- CHI TIEU (EXPENSES) ---\n";
     if (expenses.getCount() == 0) cout << "  (Chua co giao dich nao)\n";
@@ -371,10 +386,11 @@ void viewTransactionHistory(IncomeArray& incomes, ExpenseArray& expenses,
             string walName = wallets.getWalletName(t.walletID);
             
             printDate(t.day);
-            cout << "  " << left << setw(20) << catName 
+            cout << "  " << left << setw(20) << catName
                  << left << setw(20) << walName
-                 << right << setw(15) << (long long)t.amount 
+                 << right << setw(15) << (long long)t.amount
                  << "   " << t.description << endl;
+
         }
     }
     cout << "============================================================\n";

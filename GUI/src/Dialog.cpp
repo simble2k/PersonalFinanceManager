@@ -66,6 +66,12 @@ void Dialog::SetInputText(int index, const std::string& text) {
     }
 }
 
+void Dialog::SetInputMaxLength(int index, int maxLen) {
+    if (index >= 0 && index < inputCount_) {
+        inputs_[index].SetMaxLength(maxLen);
+    }
+}
+
 void Dialog::Update() {
     if (!isOpen_) return;
 

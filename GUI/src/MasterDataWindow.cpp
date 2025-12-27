@@ -1,5 +1,6 @@
 #include "MasterDataWindow.h"
 #include "NameTable.h"
+#include "Helper.h"
 #include <string>
 
 // Layout constants tuned for 1280x800 window
@@ -50,15 +51,27 @@ void MasterDataWindow::Init() {
     float addX = (float)(PADDING + 830);
     addBtn_ = Button(addX, btnY, (float)CTRL_W, (float)CTRL_H, "Add", GREEN, DARKGREEN, WHITE, [this]() {
         Focus target = (focus_ == Focus::None) ? Focus::Wallet : focus_;
-        OpenFormDialog(FormMode::Add, target);
+        
+        FormMode mode;
+        if (target == Focus::Wallet) mode = FormMode::AddWallet;
+        else if (target == Focus::Source) mode = FormMode::AddSource;
+        else mode = FormMode::AddCategory;
+        
+        OpenFormDialog(mode, target);
     }, 18);
 
     editBtn_ = Button(addX + CTRL_W + 10, btnY, (float)CTRL_W, (float)CTRL_H, "Edit", SKYBLUE, BLUE, WHITE, [this]() {
-        if (focus_ == Focus::Wallet && selectedWalletId_ < 0) { SetStatus("Select a wallet", RED); return; }
-        if (focus_ == Focus::Source && selectedSourceId_ < 0) { SetStatus("Select a source", RED); return; }
-        if (focus_ == Focus::Category && selectedCategoryId_ < 0) { SetStatus("Select a category", RED); return; }
+        if (focus_ == Focus::Wallet && selectedWalletId_ < 0) { return; }
+        if (focus_ == Focus::Source && selectedSourceId_ < 0) { return; }
+        if (focus_ == Focus::Category && selectedCategoryId_ < 0) { return; }
         Focus target = (focus_ == Focus::None) ? Focus::Wallet : focus_;
-        OpenFormDialog(FormMode::Edit, target);
+        
+        FormMode mode;
+        if (target == Focus::Wallet) mode = FormMode::EditWallet;
+        else if (target == Focus::Source) mode = FormMode::EditSource;
+        else mode = FormMode::EditCategory;
+        
+        OpenFormDialog(mode, target);
     }, 18);
 
     deleteBtn_ = Button(addX + (CTRL_W + 10) * 2, btnY, (float)CTRL_W, (float)CTRL_H, "Delete", RED, MAROON, WHITE, [this]() {
@@ -71,16 +84,19 @@ void MasterDataWindow::Init() {
 void MasterDataWindow::Update() {
     if (!initialized_) Init();
 
-    backBtn_.Update();
-    addBtn_.Update();
-    editBtn_.Update();
-    deleteBtn_.Update();
+    // Only update buttons and scroll areas if no dialog is open
+    if (!showFormDialog_ && !showConfirmDialog_) {
+        backBtn_.Update();
+        addBtn_.Update();
+        editBtn_.Update();
+        deleteBtn_.Update();
 
-    // Column updates (scroll)
-    walletArea_.Update(walletContentH_);
-    sourceArea_.Update(sourceContentH_);
-    categoryArea_.Update(categoryContentH_);
-    txnArea_.Update(txnContentH_);
+        // Column updates (scroll)
+        walletArea_.Update(walletContentH_);
+        sourceArea_.Update(sourceContentH_);
+        categoryArea_.Update(categoryContentH_);
+        txnArea_.Update(txnContentH_);
+    }
 
     if (showFormDialog_) formDialog_.Update();
     if (showConfirmDialog_) confirmDialog_.Update();
@@ -101,14 +117,20 @@ void MasterDataWindow::Draw(DataManager& dataManager) {
     editBtn_.Draw();
     deleteBtn_.Draw();
 
-    if (!status_.empty()) {
-        DrawText(status_.c_str(), (int)(titleBox.x + PADDING), (int)(titleBox.y + TITLE_H - 18), 18, statusColor_);
-    }
+    // Status text hidden per request
 
     DrawColumns(dataManager);
 
     if (showFormDialog_) {
         formDialog_.Draw();
+        // Draw input labels consistently (above each box)
+        int idLabelY = (int)(formDialogRect_.y + 70 - 26);
+        int nameLabelY = (int)(formDialogRect_.y + 150 - 26);
+        DrawText("ID", (int)(formDialogRect_.x + 30), idLabelY, 20, DARKGRAY);
+        DrawText("Name", (int)(formDialogRect_.x + 30), nameLabelY, 20, DARKGRAY);
+
+        Rectangle AddButtonRect = { formDialogRect_.x + formDialogRect_.width - 200.0f, formDialogRect_.y + formDialogRect_.height - 70.0f, 80.0f, 44.0f }; 
+        DrawFormErrorTextIndicator(AddButtonRect, errorID_);
     }
     if (showConfirmDialog_) {
         confirmDialog_.Draw();
@@ -129,8 +151,16 @@ void MasterDataWindow::DrawColumns(DataManager& dataManager) {
         if (hover) DrawRectangleRec(box, Fade(LIGHTGRAY, 0.35f));
         LayoutHelper::MeasureAndDrawText(text, 20, base, box.x, box.y + 6);
         if (hover && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            // Ensure exclusive focus between wallet and source/category
             focus_ = target;
-            SetStatus("Add targets " + std::string(text), DARKGRAY);
+            if (target == Focus::Wallet) {
+                selectedSourceId_ = -1;
+                selectedCategoryId_ = -1;
+            } else {
+                selectedWalletId_ = -1;
+                if (target == Focus::Source) selectedCategoryId_ = -1;
+                if (target == Focus::Category) selectedSourceId_ = -1;
+            }
         }
     };
 
@@ -174,7 +204,6 @@ void MasterDataWindow::DrawWallets() {
             selectedWalletId_ = ids[i];
             focus_ = Focus::Wallet;
             ClearSelectionsBelowWallet();
-            SetStatus("Wallet selected", DARKGRAY);
         }
         y += ROW_H;
     }
@@ -189,69 +218,65 @@ void MasterDataWindow::DrawSourcesAndCategories() {
     sourceContentH_ = 0.0f;
     categoryContentH_ = 0.0f;
 
-    // Sources (upper half)
-    if (selectedWalletId_ < 0) {
-        LayoutHelper::MeasureAndDrawText("Select a wallet", 18, GRAY, sourceCol_.x, sourceCol_.y + 4);
-    } else {
-        int sc = 0;
-        int* srcIds = dataManager_->sources_.getAllIDs(sc);
-        sourceContentH_ = (float)((sc + 1) * ROW_H);
-        sourceArea_.Update(sourceContentH_);
-        sourceArea_.Begin();
-        float y = sourceArea_.view.y - sourceArea_.GetOffset();
-        for (int i = 0; i < sc; ++i) {
-            Rectangle row = { sourceArea_.view.x, y, sourceArea_.view.width - 12.0f, (float)ROW_H - 4.0f };
-            bool hovered = CheckCollisionPointRec(mouse, row);
-            bool selected = srcIds[i] == selectedSourceId_ && focus_ == Focus::Source;
-            if (selected) DrawRectangleRec(row, Fade(SKYBLUE, 0.15f));
-            else if (hovered) DrawRectangleRec(row, Fade(LIGHTGRAY, 0.6f));
+    // Sources (upper half) - always visible
+    int sc = 0;
+    int* srcIds = dataManager_->sources_.getAllIDs(sc);
+    sourceContentH_ = (float)((sc + 1) * ROW_H);
+    sourceArea_.Update(sourceContentH_);
+    sourceArea_.Begin();
+    float y = sourceArea_.view.y - sourceArea_.GetOffset();
+    for (int i = 0; i < sc; ++i) {
+        Rectangle row = { sourceArea_.view.x, y, sourceArea_.view.width - 12.0f, (float)ROW_H - 4.0f };
+        bool hovered = CheckCollisionPointRec(mouse, row);
+        bool selected = srcIds[i] == selectedSourceId_ && focus_ == Focus::Source;
+        if (selected) DrawRectangleRec(row, Fade(SKYBLUE, 0.15f));
+        else if (hovered) DrawRectangleRec(row, Fade(LIGHTGRAY, 0.6f));
 
-            std::string name = dataManager_->sources_.getSourceName(srcIds[i]);
-            LayoutHelper::MeasureAndDrawText(name, 18, BLACK, row.x + 8, y + 8);
+        std::string name = dataManager_->sources_.getSourceName(srcIds[i]);
+        LayoutHelper::MeasureAndDrawText(name, 18, BLACK, row.x + 8, y + 8);
 
-            if (hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                selectedSourceId_ = srcIds[i];
-                selectedCategoryId_ = -1;
-                focus_ = Focus::Source;
-                SetStatus("Income source selected", DARKGRAY);
-            }
-            y += ROW_H;
+        if (hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            selectedSourceId_ = srcIds[i];
+            selectedCategoryId_ = -1;
+            selectedWalletId_ = -1; // exclusive focus
+            focus_ = Focus::Source;
         }
-        sourceArea_.End();
-        delete[] srcIds;
+        y += ROW_H;
     }
+    sourceArea_.End();
+    delete[] srcIds;
 
-    // Categories (lower half)
-    if (selectedWalletId_ < 0) {
-        LayoutHelper::MeasureAndDrawText("", 0, GRAY, 0, 0); // nothing
-    } else {
-        int cc = 0;
-        int* catIds = dataManager_->categories_.getAllIDs(cc);
-        categoryContentH_ = (float)((cc + 1) * ROW_H);
-        categoryArea_.Update(categoryContentH_);
-        categoryArea_.Begin();
-        float y2 = categoryArea_.view.y - categoryArea_.GetOffset();
-        for (int i = 0; i < cc; ++i) {
-            Rectangle row = { categoryArea_.view.x, y2, categoryArea_.view.width - 12.0f, (float)ROW_H - 4.0f };
-            bool hovered = CheckCollisionPointRec(mouse, row);
-            bool selected = catIds[i] == selectedCategoryId_ && focus_ == Focus::Category;
-            if (selected) DrawRectangleRec(row, Fade(SKYBLUE, 0.15f));
-            else if (hovered) DrawRectangleRec(row, Fade(LIGHTGRAY, 0.6f));
+    // Categories (lower half) - always visible
+    int cc = 0; // category count
+    int* catIds = dataManager_->categories_.getAllIDs(cc); // category IDs
 
-            std::string name = dataManager_->categories_.getCategoryName(catIds[i]);
-            LayoutHelper::MeasureAndDrawText(name, 18, BLACK, row.x + 8, y2 + 8);
+    categoryContentH_ = (float)((cc + 1) * ROW_H); // total content height
+    // Update and draw category area
+    categoryArea_.Update(categoryContentH_);
+    categoryArea_.Begin();
 
-            if (hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-                selectedCategoryId_ = catIds[i];
-                selectedSourceId_ = -1;
-                focus_ = Focus::Category;
-                SetStatus("Category selected", DARKGRAY);
-            }
-            y2 += ROW_H;
+
+    float y2 = categoryArea_.view.y - categoryArea_.GetOffset();
+    for (int i = 0; i < cc; ++i) {
+        Rectangle row = { categoryArea_.view.x, y2, categoryArea_.view.width - 12.0f, (float)ROW_H - 4.0f };
+        bool hovered = CheckCollisionPointRec(mouse, row);
+        bool selected = catIds[i] == selectedCategoryId_ && focus_ == Focus::Category;
+        if (selected) DrawRectangleRec(row, Fade(SKYBLUE, 0.15f));
+        else if (hovered) DrawRectangleRec(row, Fade(LIGHTGRAY, 0.6f));
+
+        std::string name = dataManager_->categories_.getCategoryName(catIds[i]);
+        LayoutHelper::MeasureAndDrawText(name, 18, BLACK, row.x + 8, y2 + 8);
+
+        if (hovered && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            selectedCategoryId_ = catIds[i];
+            selectedSourceId_ = -1;
+            selectedWalletId_ = -1; // exclusive focus
+            focus_ = Focus::Category;
         }
-        categoryArea_.End();
-        delete[] catIds;
+        y2 += ROW_H;
     }
+    categoryArea_.End();
+    delete[] catIds;
 }
 
 void MasterDataWindow::DrawTransactions() {
@@ -262,7 +287,35 @@ void MasterDataWindow::DrawTransactions() {
     Vector2 mouse = GetMousePosition();
     int rows = 0;
 
-    if (focus_ == Focus::Source && selectedSourceId_ >= 0) {
+    if (focus_ == Focus::Wallet && selectedWalletId_ >= 0) {
+        int inCount = dataManager_->incomes_.getCount();
+        for (int i = 0; i < inCount; ++i) {
+            IncomeTransaction it = dataManager_->incomes_.getAt(i);
+            if (it.walletID != selectedWalletId_) continue;
+            Rectangle row = { txnArea_.view.x, y, txnArea_.view.width - 12.0f, (float)ROW_H - 4.0f };
+            if (CheckCollisionPointRec(mouse, row)) DrawRectangleRec(row, Fade(SKYBLUE, 0.10f));
+            std::string line = "[Income] +" + FormatCurrency((long long)it.amount) + "  -  " + it.description;
+            LayoutHelper::MeasureAndDrawText(line, 18, DARKGREEN, row.x + 8, y + 8);
+            y += ROW_H;
+            rows++;
+        }
+
+        int exCount = dataManager_->expenses_.getCount();
+        for (int i = 0; i < exCount; ++i) {
+            ExpenseTransaction et = dataManager_->expenses_.getAt(i);
+            if (et.walletID != selectedWalletId_) continue;
+            Rectangle row = { txnArea_.view.x, y, txnArea_.view.width - 12.0f, (float)ROW_H - 4.0f };
+            if (CheckCollisionPointRec(mouse, row)) DrawRectangleRec(row, Fade(SKYBLUE, 0.10f));
+            std::string line = "[Expense] -" + FormatCurrency((long long)et.amount) + "  -  " + et.description;
+            LayoutHelper::MeasureAndDrawText(line, 18, MAROON, row.x + 8, y + 8);
+            y += ROW_H;
+            rows++;
+        }
+
+        if (rows == 0) {
+            LayoutHelper::MeasureAndDrawText("No transactions for this wallet", 18, GRAY, txnArea_.view.x, txnArea_.view.y);
+        }
+    } else if (focus_ == Focus::Source && selectedSourceId_ >= 0) {
         int count = dataManager_->incomes_.getCount();
         for (int i = 0; i < count; ++i) {
             IncomeTransaction it = dataManager_->incomes_.getAt(i);
@@ -287,7 +340,7 @@ void MasterDataWindow::DrawTransactions() {
             rows++;
         }
     } else {
-        LayoutHelper::MeasureAndDrawText("Select source/category to view transactions", 18, GRAY, txnArea_.view.x, txnArea_.view.y);
+        LayoutHelper::MeasureAndDrawText("Select wallet/source/category to view transactions", 18, GRAY, txnArea_.view.x, txnArea_.view.y);
     }
 
     txnContentH_ = (float)((rows + 1) * ROW_H);
@@ -300,12 +353,7 @@ void MasterDataWindow::ClearSelectionsBelowWallet() {
     focus_ = Focus::Wallet;
 }
 
-// Set status message with color
-void MasterDataWindow::SetStatus(const std::string& msg, Color color) {
-    status_ = msg;
-    statusColor_ = color;
-}
-
+// Generate next available ID for a NameTable
 int MasterDataWindow::NextId(NameTable& table) const {
     int c = 0;
     int* ids = table.getAllIDs(c);
@@ -318,26 +366,42 @@ int MasterDataWindow::NextId(NameTable& table) const {
 }
 
 void MasterDataWindow::OpenFormDialog(FormMode mode, Focus target) {
-    if (!dataManager_) { SetStatus("No data manager", RED); return; }
+    if (!dataManager_) { return; }
 
     formMode_ = mode;
     formTarget_ = target;
     editOriginalId_ = -1;
 
+    errorID_ = -1;
+
     Rectangle r = LayoutHelper::CenterRect(0, 0, (float)SCREEN_W, (float)SCREEN_H, 520.0f, 260.0f);
-    const char* title = (mode == FormMode::Add) ? "Add" : "Edit";
+    formDialogRect_ = r;
+    
+    std::string title;
+    if (mode == FormMode::AddWallet) title = "Add Wallet";
+    else if (mode == FormMode::AddSource) title = "Add Source";
+    else if (mode == FormMode::AddCategory) title = "Add Category";
+    else if (mode == FormMode::EditWallet) title = "Edit Wallet";
+    else if (mode == FormMode::EditSource) title = "Edit Source";
+    else if (mode == FormMode::EditCategory) title = "Edit Category";
+    
     formDialog_ = Dialog(r.x, r.y, r.width, r.height, title);
 
     DrawText("ID: ", r.x + 30, r.y + 50, 24, BLACK);
     formDialog_.AddTextInput(30, 70, 160, 36, "ID");
     DrawText("Name: ", r.x + 30, r.y + 130, 24, BLACK);
     formDialog_.AddTextInput(30, 150, 360, 36, "Name");
-    formDialog_.AddButton(r.width - 200, r.height - 70, 80, 44, (mode == FormMode::Add) ? "Add" : "Save",
+    // Character caps for inputs
+    formDialog_.SetInputMaxLength(0, 10);  // ID
+    formDialog_.SetInputMaxLength(1, 40);  // Name
+    
+    bool isAdd = (mode == FormMode::AddWallet || mode == FormMode::AddSource || mode == FormMode::AddCategory);
+    formDialog_.AddButton(r.width - 200, r.height - 70, 80, 44, isAdd ? "Add" : "Save",
                           GREEN, DARKGREEN, WHITE, [this]() { SubmitForm(); });
     formDialog_.AddButton(r.width - 110, r.height - 70, 80, 44, "Cancel",
                           RED, MAROON, WHITE, [this]() { CloseDialogs(); });
 
-    if (mode == FormMode::Add) {
+    if (isAdd) {
         int nextId = 1;
         if (target == Focus::Wallet) nextId = NextId(dataManager_->wallets_);
         else if (target == Focus::Source) nextId = NextId(dataManager_->sources_);
@@ -356,7 +420,6 @@ void MasterDataWindow::OpenFormDialog(FormMode mode, Focus target) {
             currentId = selectedCategoryId_;
             currentName = dataManager_->categories_.getCategoryName(currentId);
         } else {
-            SetStatus("Select an item to edit", RED);
             return;
         }
         editOriginalId_ = currentId;
@@ -369,16 +432,19 @@ void MasterDataWindow::OpenFormDialog(FormMode mode, Focus target) {
 }
 
 void MasterDataWindow::SubmitForm() {
-    if (!dataManager_) { SetStatus("No data manager", RED); return; }
+    if (!dataManager_) { return; }
     std::string idText = formDialog_.GetInputText(0);
     std::string nameText = formDialog_.GetInputText(1);
 
-    if (nameText.empty()) { SetStatus("Name required", RED); return; }
+    // Validate name
+    if (nameText.empty()) { errorID_  = 7; return; }
 
+    // Check ID validity
     int parsedId = -1;
-    try { parsedId = std::stoi(idText); } catch (...) { SetStatus("Invalid ID", RED); return; }
-    if (parsedId <= 0) { SetStatus("ID must be > 0", RED); return; }
+    try { parsedId = std::stoi(idText); } catch (...) {errorID_ = 8; return; }
+    if (parsedId <= 0) { errorID_ = 8; return; }
 
+    // Check for ID uniqueness when adding
     auto idExists = [&](NameTable& tbl, int id) {
         int c = 0; int* ids = tbl.getAllIDs(c);
         bool exists = false;
@@ -387,54 +453,52 @@ void MasterDataWindow::SubmitForm() {
         return exists;
     };
 
-    bool isEdit = (formMode_ == FormMode::Edit);
+    bool isEdit = (formMode_ == FormMode::EditWallet || formMode_ == FormMode::EditSource || formMode_ == FormMode::EditCategory);
     int targetId = parsedId;
     if (isEdit) targetId = editOriginalId_; // keep ID stable to avoid breaking references
 
+
     switch (formTarget_) {
     case Focus::Wallet: {
-        if (!isEdit && idExists(dataManager_->wallets_, targetId)) { SetStatus("ID exists", RED); return; }
+        if (!isEdit && idExists(dataManager_->wallets_, targetId)) { errorID_ = 8; return; }
         if (isEdit) {
             dataManager_->wallets_.editName(targetId, nameText);
         } else {
             dataManager_->wallets_.addWallet(targetId, nameText);
         }
         dataManager_->SaveAllData();
-        SetStatus(isEdit ? "Wallet saved" : "Wallet added", DARKGREEN);
         break;
     }
     case Focus::Source: {
-        if (!isEdit && idExists(dataManager_->sources_, targetId)) { SetStatus("ID exists", RED); return; }
+        if (!isEdit && idExists(dataManager_->sources_, targetId)) { errorID_ = 8; return; }
         if (isEdit) {
             dataManager_->sources_.editName(targetId, nameText);
         } else {
             dataManager_->sources_.insertSource(targetId, nameText);
         }
         dataManager_->SaveAllData();
-        SetStatus(isEdit ? "Source saved" : "Source added", DARKGREEN);
         break;
     }
     case Focus::Category: {
-        if (!isEdit && idExists(dataManager_->categories_, targetId)) { SetStatus("ID exists", RED); return; }
+        if (!isEdit && idExists(dataManager_->categories_, targetId)) { errorID_ = 8; return; }
         if (isEdit) {
             dataManager_->categories_.editName(targetId, nameText);
         } else {
             dataManager_->categories_.addCategory(targetId, nameText);
         }
         dataManager_->SaveAllData();
-        SetStatus(isEdit ? "Category saved" : "Category added", DARKGREEN);
         break;
     }
     default:
-        SetStatus("Select a target", RED);
         return;
     }
 
+    errorID_ = -1;
     CloseDialogs();
 }
 
 void MasterDataWindow::OpenDeleteConfirm() {
-    if (!dataManager_) { SetStatus("No data manager", RED); return; }
+    if (!dataManager_) { return; }
 
     int id = -1;
     const char* targetName = "Item";
@@ -442,48 +506,50 @@ void MasterDataWindow::OpenDeleteConfirm() {
     if (focus_ == Focus::Wallet && selectedWalletId_ >= 0) { id = selectedWalletId_; targetName = "Wallet"; }
     else if (focus_ == Focus::Source && selectedSourceId_ >= 0) { id = selectedSourceId_; targetName = "Source"; }
     else if (focus_ == Focus::Category && selectedCategoryId_ >= 0) { id = selectedCategoryId_; targetName = "Category"; }
-    else { SetStatus("Select an item to delete", RED); return; }
+    else { return; }
 
-    Rectangle r = LayoutHelper::CenterRect(0, 0, (float)SCREEN_W, (float)SCREEN_H, 420.0f, 200.0f);
+    Rectangle r = LayoutHelper::CenterRect(0, 0, (float)SCREEN_W, (float)SCREEN_H, 440.0f, 220.0f);
     confirmDialog_ = Dialog(r.x, r.y, r.width, r.height, "Confirm delete");
-    confirmDialog_.AddButton(r.width - 200, r.height - 60, 80, 44, "Yes",
+    // Bigger centered buttons
+    float btnW = 140.0f;
+    float btnH = 52.0f;
+    float spacing = 24.0f;
+    float totalW = btnW * 2.0f + spacing;
+    float startX = (r.width - totalW) / 2.0f;
+    float y = r.height - 80.0f;
+    confirmDialog_.AddButton(startX, y, btnW, btnH, "Yes",
                              RED, MAROON, WHITE, [this]() { ConfirmDelete(); });
-    confirmDialog_.AddButton(r.width - 110, r.height - 60, 80, 44, "No",
+    confirmDialog_.AddButton(startX + btnW + spacing, y, btnW, btnH, "No",
                              GREEN, DARKGREEN, WHITE, [this]() { CloseDialogs(); });
     formTarget_ = focus_;
     showConfirmDialog_ = true;
     confirmDialog_.Open();
-    SetStatus(std::string("Delete ") + targetName + "?", DARKGRAY);
 }
 
 void MasterDataWindow::ConfirmDelete() {
-    if (!dataManager_) { SetStatus("No data manager", RED); return; }
+    if (!dataManager_) { return; }
 
     switch (formTarget_) {
     case Focus::Wallet:
-        if (selectedWalletId_ < 0) { SetStatus("Select a wallet", RED); break; }
+        if (selectedWalletId_ < 0) { break; }
         dataManager_->wallets_.remove(selectedWalletId_);
         selectedWalletId_ = -1;
         ClearSelectionsBelowWallet();
         dataManager_->SaveAllData();
-        SetStatus("Wallet deleted", DARKGREEN);
         break;
     case Focus::Source:
-        if (selectedSourceId_ < 0) { SetStatus("Select a source", RED); break; }
+        if (selectedSourceId_ < 0) { break; }
         dataManager_->sources_.remove(selectedSourceId_);
         selectedSourceId_ = -1;
         dataManager_->SaveAllData();
-        SetStatus("Source deleted", DARKGREEN);
         break;
     case Focus::Category:
-        if (selectedCategoryId_ < 0) { SetStatus("Select a category", RED); break; }
+        if (selectedCategoryId_ < 0) { break; }
         dataManager_->categories_.remove(selectedCategoryId_);
         selectedCategoryId_ = -1;
         dataManager_->SaveAllData();
-        SetStatus("Category deleted", DARKGREEN);
         break;
     default:
-        SetStatus("Select a target", RED);
         break;
     }
 
@@ -493,6 +559,9 @@ void MasterDataWindow::ConfirmDelete() {
 void MasterDataWindow::CloseDialogs() {
     showFormDialog_ = false;
     showConfirmDialog_ = false;
+    errorID_ = -1;
     formDialog_.Close();
     confirmDialog_.Close();
 }
+
+

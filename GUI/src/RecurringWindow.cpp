@@ -46,10 +46,31 @@ void RecurringWindow::Init() {
     addDialog_.AddTextInput(inputGrid_[3].x, inputGrid_[3].y, inputGrid_[3].width, inputGrid_[3].height, "Description");
     addDialog_.AddTextInput(inputGrid_[4].x, inputGrid_[4].y, inputGrid_[4].width, inputGrid_[4].height, "Start date (DD/MM/YYYY)");
     addDialog_.AddTextInput(inputGrid_[5].x, inputGrid_[5].y, inputGrid_[5].width, inputGrid_[5].height, "End date (optional)");
+    // Character caps
+    addDialog_.SetInputMaxLength(INPUT_AMOUNT_IDX, 20);
+    addDialog_.SetInputMaxLength(INPUT_DESC_IDX, 120);
+    addDialog_.SetInputMaxLength(INPUT_START_IDX, 10);
+    addDialog_.SetInputMaxLength(INPUT_END_IDX, 10);
     addDialog_.AddButton(dialogRect_.width - 220, dialogRect_.height - 70, 100, 46, "Add",
                          GREEN, DARKGREEN, WHITE, [this]() { SubmitRecurring(); });
     addDialog_.AddButton(dialogRect_.width - 110, dialogRect_.height - 70, 100, 46, "Cancel",
                          RED, MAROON, WHITE, [this]() { CloseDialog(); });
+
+    // Confirm dialog (shared for income/expense)
+    Rectangle confirmRect = LayoutHelper::CenterRect(0, 0, (float)screenWidth, (float)screenHeight, 420.0f, 220.0f);
+    confirmDialog_ = Dialog(confirmRect.x, confirmRect.y, confirmRect.width, confirmRect.height, "Saved");
+    confirmDialog_.AddButton(24, confirmRect.height - 70, 160, 44, "Keep adding",
+                             GREEN, DARKGREEN, WHITE, [this]() {
+                                 showConfirmDialog_ = false;
+                                 confirmDialog_.Close();
+                                 if (lastWasIncome_) OpenIncomeDialog(); else OpenExpenseDialog();
+                             });
+    confirmDialog_.AddButton(confirmRect.width - 184, confirmRect.height - 70, 160, 44, "Dashboard",
+                             SKYBLUE, BLUE, WHITE, [this]() {
+                                 showConfirmDialog_ = false;
+                                 confirmDialog_.Close();
+                                 if (onBackRequested_) onBackRequested_();
+                             });
 
     initialized_ = true;
 }
@@ -57,15 +78,22 @@ void RecurringWindow::Init() {
 void RecurringWindow::Update() {
     if (!initialized_) Init();
 
-    backBtn_.Update();
-    addIncomeBtn_.Update();
-    addExpenseBtn_.Update();
+    // Only update buttons and list if no dialog is open
+    if (!showAddDialog_ && !showConfirmDialog_) {
+        backBtn_.Update();
+        addIncomeBtn_.Update();
+        addExpenseBtn_.Update();
+    }
 
     if (showAddDialog_) {
         addDialog_.Update();
         if (walletDropdown_) walletDropdown_->Update();
         if (addingIncome_ && sourceDropdown_) sourceDropdown_->Update();
         if (!addingIncome_ && categoryDropdown_) categoryDropdown_->Update();
+    }
+
+    if (showConfirmDialog_) {
+        confirmDialog_.Update();
     }
 }
 
@@ -83,14 +111,14 @@ void RecurringWindow::Draw(DataManager& dataManager) {
     addIncomeBtn_.Draw();
     addExpenseBtn_.Draw();
 
-    if (!statusMessage_.empty()) {
-        DrawText(statusMessage_.c_str(), (int)(titleBox.x + PADDING), (int)(titleBox.y + TITLE_H - 18), 18, statusColor_);
-    }
-
     DrawList(dataManager);
 
     if (showAddDialog_) {
         DrawAddDialog();
+    }
+
+    if (showConfirmDialog_) {
+        DrawConfirmDialog();
     }
 }
 
@@ -105,8 +133,8 @@ void RecurringWindow::DrawList(DataManager& dataManager) {
     LayoutHelper::MeasureAndDrawText("Type", 20, DARKGRAY, listArea_.view.x + 12, listArea_.view.y - 30);
     LayoutHelper::MeasureAndDrawText("Wallet", 20, DARKGRAY, listArea_.view.x + 120, listArea_.view.y - 30);
     LayoutHelper::MeasureAndDrawText("Source / Category", 20, DARKGRAY, listArea_.view.x + 360, listArea_.view.y - 30);
-    LayoutHelper::MeasureAndDrawText("Amount", 20, DARKGRAY, listArea_.view.x + listArea_.view.width - 240, listArea_.view.y - 30);
-    LayoutHelper::MeasureAndDrawText("Start -> End", 20, DARKGRAY, listArea_.view.x + listArea_.view.width - 120, listArea_.view.y - 30);
+    LayoutHelper::MeasureAndDrawText("Amount", 20, DARKGRAY, listArea_.view.x + listArea_.view.width - 360, listArea_.view.y - 30);
+    LayoutHelper::MeasureAndDrawText("Start -> End", 20, DARKGRAY, listArea_.view.x + listArea_.view.width - 240, listArea_.view.y - 30);
 
     listArea_.Begin();
     float y = listArea_.view.y - listArea_.GetOffset();
@@ -135,7 +163,7 @@ void RecurringWindow::DrawList(DataManager& dataManager) {
         LayoutHelper::MeasureAndDrawText(amt, 18, task.isIncome ? GREEN : RED, row.x + row.width - 260 - amtW, y + 10);
 
         std::string dateStr = FormatDate(task.startDate) + " -> " + FormatDate(task.endDate);
-        LayoutHelper::MeasureAndDrawText(dateStr, 18, DARKGRAY, row.x + row.width - 120, y + 10);
+        LayoutHelper::MeasureAndDrawText(dateStr, 18, DARKGRAY, row.x + row.width - 240, y + 10);
 
         if (!task.description.empty()) {
             LayoutHelper::MeasureAndDrawText(task.description, 16, GRAY, row.x + 12, y + 28);
@@ -150,7 +178,9 @@ void RecurringWindow::DrawList(DataManager& dataManager) {
 void RecurringWindow::OpenIncomeDialog() {
     if (!dataManager_) return;
     addingIncome_ = true;
+    lastWasIncome_ = true;
     showAddDialog_ = true;
+    errorID_ = -1;
     addDialog_.ResetInputs();
     addDialog_.Open();
 
@@ -167,7 +197,9 @@ void RecurringWindow::OpenIncomeDialog() {
 void RecurringWindow::OpenExpenseDialog() {
     if (!dataManager_) return;
     addingIncome_ = false;
+    lastWasIncome_ = false;
     showAddDialog_ = true;
+    errorID_ = -1;
     addDialog_.ResetInputs();
     addDialog_.Open();
 
@@ -183,62 +215,63 @@ void RecurringWindow::OpenExpenseDialog() {
 
 void RecurringWindow::CloseDialog() {
     showAddDialog_ = false;
+    errorID_ = -1;
     addDialog_.Close();
 }
 
-bool RecurringWindow::ParseDate(const std::string& text, date& out, bool allowEmpty) {
-    if (text.empty()) {
-        if (allowEmpty) { out = {0,0,0}; return true; }
-        return false;
-    }
-    int d = 0, m = 0, y = 0;
-
-    // Get day, month, year by scanning
-    if (std::sscanf(text.c_str(), "%d/%d/%d", &d, &m, &y) != 3) return false;
-    if (d <= 0 || m <= 0 || m > 12 || y <= 0) return false;
-    out = {d, m, y};
-    return true;
+void RecurringWindow::ShowConfirm(const std::string& message) {
+    confirmMessage_ = message;
+    showConfirmDialog_ = true;
+    confirmDialog_.Open();
 }
+
+void RecurringWindow::DrawConfirmDialog() {
+    confirmDialog_.Draw();
+    Rectangle r = confirmDialog_.GetRect();
+    DrawText(confirmMessage_.c_str(), (int)(r.x + 24), (int)(r.y + 64), 20, BLACK);
+}
+
+
 
 void RecurringWindow::SubmitRecurring() {
     if (!dataManager_ || !walletDropdown_) return;
+
+    errorID_ = -1;
 
     std::string amtText = addDialog_.GetInputText(INPUT_AMOUNT_IDX);
     std::string desc = addDialog_.GetInputText(INPUT_DESC_IDX);
     std::string startText = addDialog_.GetInputText(INPUT_START_IDX);
     std::string endText = addDialog_.GetInputText(INPUT_END_IDX);
 
-    double amount = 0.0;
-    try { amount = std::stod(amtText); } catch (...) { statusMessage_ = "Invalid amount"; statusColor_ = RED; return; }
-    if (amount <= 0) { statusMessage_ = "Amount must be > 0"; statusColor_ = RED; return; }
+    long long amt = 0;
+    if (!IsPositiveMoneyLLong(amtText, amt)) { errorID_ = 1; return; }
 
     date start{};
-    if (!ParseDate(startText, start, false)) { statusMessage_ = "Invalid start date"; statusColor_ = RED; return; }
+    if (!ParseDateString(startText, start)) { errorID_ = 2; return; }
 
     date end{};
-    if (!ParseDate(endText, end, true)) { statusMessage_ = "Invalid end date"; statusColor_ = RED; return; }
+    if (!endText.empty() && !ParseDateString(endText, end)) { errorID_ = 3; return; }
 
     int walletId = walletDropdown_->GetSelectedValue();
-    if (walletId < 0) { statusMessage_ = "Select a wallet"; statusColor_ = RED; return; }
+    if (walletId < 0) { errorID_ = 4; return; }
 
     int catSrcId = -1;
     if (addingIncome_) {
-        if (!sourceDropdown_) return;
+        if (!sourceDropdown_) { errorID_ = 5; return; }
         catSrcId = sourceDropdown_->GetSelectedValue();
-        if (catSrcId < 0) { statusMessage_ = "Select a source"; statusColor_ = RED; return; }
+        if (catSrcId < 0) { errorID_ = 5; return; }
     } else {
-        if (!categoryDropdown_) return;
+        if (!categoryDropdown_) { errorID_ = 6; return; }
         catSrcId = categoryDropdown_->GetSelectedValue();
-        if (catSrcId < 0) { statusMessage_ = "Select a category"; statusColor_ = RED; return; }
+        if (catSrcId < 0) { errorID_ = 6; return; }
     }
 
-    dataManager_->recurring_.addRecurring(addingIncome_, amount, catSrcId, walletId, desc, start, end);
+    dataManager_->recurring_.addRecurring(addingIncome_, static_cast<double>(amt), catSrcId, walletId, desc, start, end);
     dataManager_->SaveAllData();
 
-    statusMessage_ = addingIncome_ ? "Recurring income added" : "Recurring expense added";
-    statusColor_ = DARKGREEN;
-
+    errorID_ = -1;
     CloseDialog();
+    ShowConfirm(addingIncome_ ? "Recurring income saved." : "Recurring expense saved.");
 }
 
 void RecurringWindow::PopulateWalletDropdown(Dropdown& dropdown) {
@@ -290,6 +323,7 @@ std::string RecurringWindow::FormatDate(const date& d) const {
     return std::string(buf);
 }
 
+// Draw the add/edit dialog with all controls
 void RecurringWindow::DrawAddDialog() {
     addDialog_.Draw();
 
@@ -303,18 +337,30 @@ void RecurringWindow::DrawAddDialog() {
     int endLabelY = (int)(dialogRect_.y + inputGrid_[5].y - 26);
 
     DrawText("Wallet", (int)(dialogRect_.x + inputGrid_[0].x), walletLabelY, 20, DARKGRAY);
-    if (walletDropdown_) walletDropdown_->Draw();
+    if (walletDropdown_) walletDropdown_->DrawBase();
 
     if (addingIncome_) {
         DrawText("Income source", (int)(dialogRect_.x + inputGrid_[1].x), sourceLabelY, 20, DARKGRAY);
-        if (sourceDropdown_) sourceDropdown_->Draw();
+        if (sourceDropdown_) sourceDropdown_->DrawBase();
     } else {
         DrawText("Category", (int)(dialogRect_.x + inputGrid_[1].x), sourceLabelY, 20, DARKGRAY);
-        if (categoryDropdown_) categoryDropdown_->Draw();
+        if (categoryDropdown_) categoryDropdown_->DrawBase();
     }
 
     DrawText("Amount", (int)(dialogRect_.x + inputGrid_[2].x), amountLabelY, 20, DARKGRAY);
     DrawText("Description", (int)(dialogRect_.x + inputGrid_[3].x), descLabelY, 20, DARKGRAY);
     DrawText("Start date", (int)(dialogRect_.x + inputGrid_[4].x), startLabelY, 20, DARKGRAY);
     DrawText("End date", (int)(dialogRect_.x + inputGrid_[5].x), endLabelY, 20, DARKGRAY);
+
+    // Overlay lists last to ensure they are above labels
+    if (walletDropdown_) walletDropdown_->DrawListOverlay();
+    if (addingIncome_) {
+        if (sourceDropdown_) sourceDropdown_->DrawListOverlay();
+    } else {
+        if (categoryDropdown_) categoryDropdown_->DrawListOverlay();
+    }
+
+
+    Rectangle AddButtonRect = { dialogRect_.x + dialogRect_.width - 220.0f, dialogRect_.y + dialogRect_.height - 70.0f, 100.0f, 46.0f };
+    DrawFormErrorTextIndicator(AddButtonRect, errorID_);
 }

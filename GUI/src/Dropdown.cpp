@@ -97,8 +97,11 @@ void Dropdown::Update() {
 
 // Draw the dropdown
 void Dropdown::Draw() {
-    
-    // Draw main button
+    DrawBase();
+    DrawListOverlay();
+}
+
+void Dropdown::DrawBase() {
     Color buttonColor = isOpen_ ? LIGHTGRAY : WHITE;
     DrawRectangleRec(rect_, buttonColor);
     DrawRectangleLinesEx(rect_, 2.0f, BLACK);
@@ -109,25 +112,24 @@ void Dropdown::Draw() {
 
     // Draw dropdown arrow (▼)
     DrawText("v", (int)(rect_.x + rect_.width - 20), (int)rect_.y + 8, 18, DARKGRAY);
+}
 
-    // Draw dropdown list if open
-    if (isOpen_) {
-        // Background for the list (clipped by scissor inside Begin/End)
-        Rectangle listBg = listScroll_.view;
-        DrawRectangleRec(listBg, Fade(LIGHTGRAY, 0.95f));
-        DrawRectangleLinesEx(listBg, 2.0f, DARKGRAY);
+void Dropdown::DrawListOverlay() {
+    if (!isOpen_) return;
 
-        // Draw options within scroll area
-        listScroll_.Begin();
-        float baseY = listScroll_.view.y - listScroll_.GetOffset();
-        Vector2 mouse = GetMousePosition();
-        for (int i = 0; i < count_; ++i) {
-            Rectangle optionRect = { rect_.x, baseY + (float)(i * ITEM_HEIGHT), rect_.width, (float)ITEM_HEIGHT };
-            bool isHovered = CheckCollisionPointRec(mouse, optionRect);
-            DrawOption(labels_[i], optionRect.x, optionRect.y, optionRect.width, optionRect.height, isHovered);
-        }
-        listScroll_.End();
+    Rectangle listBg = listScroll_.view;
+    DrawRectangleRec(listBg, Fade(LIGHTGRAY, 0.95f));
+    DrawRectangleLinesEx(listBg, 2.0f, DARKGRAY);
+
+    listScroll_.Begin();
+    float baseY = listScroll_.view.y - listScroll_.GetOffset();
+    Vector2 mouse = GetMousePosition();
+    for (int i = 0; i < count_; ++i) {
+        Rectangle optionRect = { rect_.x, baseY + (float)(i * ITEM_HEIGHT), rect_.width, (float)ITEM_HEIGHT };
+        bool isHovered = CheckCollisionPointRec(mouse, optionRect);
+        DrawOption(labels_[i], optionRect.x, optionRect.y, optionRect.width, optionRect.height, isHovered);
     }
+    listScroll_.End();
 }
 
 // Helper to draw a single option
