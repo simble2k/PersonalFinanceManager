@@ -11,24 +11,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Install CMake
-        run: |
-          brew update
-          brew install cmake
+        with:
+          submodules: true
 
       - name: Bootstrap vcpkg
-        run: ./vcpkg/bootstrap-vcpkg.sh
+        run: |
+          chmod +x ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/bootstrap-vcpkg.sh
+
+      - name: Install dependencies via vcpkg
+        run: |
+          ./vcpkg/vcpkg install raylib:x64-osx
 
       - name: Configure (Release, x64)
         run: |
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake \
-            -DVCPKG_TARGET_TRIPLET=x64-osx
+            -DVCPKG_TARGET_TRIPLET=x64-osx \
+            -DCMAKE_OSX_ARCHITECTURES=x86_64
 
       - name: Build
-        run: cmake --build build --config Release -j
+        run: cmake --build build --config Release -- -j$(sysctl -n hw.ncpu)
 
       - name: Package artifact
         shell: bash
