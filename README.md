@@ -3,6 +3,7 @@
 ## Prebuilt (Windows)
 - Download `dist/PersonalFinanceManager-Windows.zip` from the repository (or Releases).
 - Extract and run `PersonalFinanceManager-Windows.exe`.
+- Ensure `raylib.dll` is in the same folder as the `.exe` (bundled in the prebuild ZIP).
 - Requires Microsoft Visual C++ Redistributable (2015–2022). If missing, install from https://aka.ms/vs/17/release/vc_redist.x64.exe.
 
 ## Prebuilt (macOS)
