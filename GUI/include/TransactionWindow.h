@@ -18,8 +18,6 @@
 #include "LayoutHelper.h"
 #include "Dropdown.h"
 
-using namespace std;
-
 // window settings
 const int screenWidth = 1280;
 const int screenHeight = 800;

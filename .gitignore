@@ -48,3 +48,8 @@ saves/*.dat
 
 # debug information files
 *.dwo
+
+# CMake build directory
+build/
+# Other build folders
+build-*/

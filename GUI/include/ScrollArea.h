@@ -2,8 +2,6 @@
 #pragma once
 #include "raylib.h"
 
-using namespace std;
-
 // Simple vertical scroll area helper for raylib.
 // - Initialize with a view rect via Init()
 // - Call Update(contentHeight) each frame (before drawing) to handle input.

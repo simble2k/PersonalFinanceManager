@@ -1,15 +1,15 @@
-#include "Button.h"
+#include "button.h"
 
 Button::Button()
-        : rect_{0, 0, 0, 0}, text_(""), normalColor_(GRAY), hoverColor_(DARKGRAY),
-            textColor_(BLACK), fontSize_(20), isHovered_(false), onClick_(nullptr) {}
+    : rect_{0, 0, 0, 0}, text_(""), normalColor_(GRAY), hoverColor_(DARKGRAY),
+      textColor_(BLACK), fontSize_(20), isHovered_(false), onClick_(nullptr) {}
 
 Button::Button(float x, float y, float width, float height, const std::string& text,
-                             Color normalColor, Color hoverColor, Color textColor,
-                             std::function<void()> onClick, int fontSize)
-        : rect_{x, y, width, height}, text_(text), normalColor_(normalColor),
-            hoverColor_(hoverColor), textColor_(textColor), fontSize_(fontSize),
-            isHovered_(false), onClick_(onClick) {} // Constructor
+               Color normalColor, Color hoverColor, Color textColor,
+               std::function<void()> onClick, int fontSize)
+    : rect_{x, y, width, height}, text_(text), normalColor_(normalColor),
+      hoverColor_(hoverColor), textColor_(textColor), fontSize_(fontSize),
+      isHovered_(false), onClick_(onClick) {}
 
 void Button::Update() {
     Vector2 mouse = GetMousePosition();

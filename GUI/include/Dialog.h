@@ -2,7 +2,7 @@
 // Dialog box or window for user input with text fields and buttons
 
 #include "raylib.h"
-#include "Button.h"
+#include "button.h"
 #include "TextInput.h"
 #include <string>
 #include <functional>
