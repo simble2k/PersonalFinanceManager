@@ -529,6 +529,89 @@ void MasterDataWindow::OpenDeleteConfirm() {
 void MasterDataWindow::ConfirmDelete() {
     if (!dataManager_) { return; }
 
+    bool isInUse = false;
+
+    // 1. DATA INTEGRITY CHECK
+    // We must scan all transactions to ensure we don't delete an ID that is currently used.
+    
+    if (formTarget_ == Focus::Wallet && selectedWalletId_ >= 0) {
+        // A. Check Incomes for this Wallet
+        for (int i = 0; i < dataManager_->incomes_.getCount(); i++) {
+            if (dataManager_->incomes_.getAt(i).walletID == selectedWalletId_) {
+                isInUse = true;
+                break;
+            }
+        }
+        // B. Check Expenses for this Wallet
+        if (!isInUse) {
+            for (int i = 0; i < dataManager_->expenses_.getCount(); i++) {
+                if (dataManager_->expenses_.getAt(i).walletID == selectedWalletId_) {
+                    isInUse = true;
+                    break;
+                }
+            }
+        }
+        // C. Check Recurring Tasks for this Wallet
+        if (!isInUse) {
+            for (int i = 0; i < dataManager_->recurring_.getCount(); i++) {
+                if (dataManager_->recurring_.getAt(i).walletID == selectedWalletId_) {
+                    isInUse = true;
+                    break;
+                }
+            }
+        }
+    } 
+    else if (formTarget_ == Focus::Source && selectedSourceId_ >= 0) {
+        // A. Check Incomes for this Source
+        for (int i = 0; i < dataManager_->incomes_.getCount(); i++) {
+            if (dataManager_->incomes_.getAt(i).sourceID == selectedSourceId_) {
+                isInUse = true;
+                break;
+            }
+        }
+        // B. Check Recurring Tasks (Income Type) for this Source
+        if (!isInUse) {
+            for (int i = 0; i < dataManager_->recurring_.getCount(); i++) {
+                RecurringTask t = dataManager_->recurring_.getAt(i);
+                if (t.isIncome && t.categoryOrSourceID == selectedSourceId_) {
+                    isInUse = true;
+                    break;
+                }
+            }
+        }
+    } 
+    else if (formTarget_ == Focus::Category && selectedCategoryId_ >= 0) {
+        // A. Check Expenses for this Category
+        for (int i = 0; i < dataManager_->expenses_.getCount(); i++) {
+            if (dataManager_->expenses_.getAt(i).categoryID == selectedCategoryId_) {
+                isInUse = true;
+                break;
+            }
+        }
+        // B. Check Recurring Tasks (Expense Type) for this Category
+        if (!isInUse) {
+            for (int i = 0; i < dataManager_->recurring_.getCount(); i++) {
+                RecurringTask t = dataManager_->recurring_.getAt(i);
+                if (!t.isIncome && t.categoryOrSourceID == selectedCategoryId_) {
+                    isInUse = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    // 2. BLOCK DELETION IF IN USE
+    if (isInUse) {
+        // Ideally, we would show a UI popup here. For now, we print to console
+        // and close the dialog to prevent data corruption.
+        std::cout << "[ERROR] Cannot delete item (ID " 
+                  << (selectedWalletId_ >= 0 ? selectedWalletId_ : (selectedSourceId_ >= 0 ? selectedSourceId_ : selectedCategoryId_)) 
+                  << ") because it is currently used in existing transactions or recurring settings.\n";
+        CloseDialogs();
+        return; 
+    }
+
+    // 3. EXECUTE DELETION
     switch (formTarget_) {
     case Focus::Wallet:
         if (selectedWalletId_ < 0) { break; }

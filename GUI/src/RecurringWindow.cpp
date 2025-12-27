@@ -235,6 +235,7 @@ void RecurringWindow::DrawConfirmDialog() {
 
 void RecurringWindow::SubmitRecurring() {
     if (!dataManager_ || !walletDropdown_) return;
+    
 
     errorID_ = -1;
 
@@ -269,6 +270,9 @@ void RecurringWindow::SubmitRecurring() {
     dataManager_->recurring_.addRecurring(addingIncome_, static_cast<double>(amt), catSrcId, walletId, desc, start, end);
     dataManager_->SaveAllData();
 
+    // Run the check immediately so the new task executes if it's due today
+    dataManager_->recurring_.processRecurring(dataManager_->incomes_, dataManager_->expenses_);
+    
     errorID_ = -1;
     CloseDialog();
     ShowConfirm(addingIncome_ ? "Recurring income saved." : "Recurring expense saved.");

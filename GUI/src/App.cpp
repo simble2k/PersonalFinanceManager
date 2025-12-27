@@ -14,26 +14,33 @@ bool App::Init() {
         return false; // Fatal error loading data
     }
 
+    // Process recurring transactions immediately upon opening the app
+    dataManager_.recurring_.processRecurring(dataManager_.incomes_, dataManager_.expenses_);
+
     // Get WalletsData from DataManager
-    data_ = dataManager_.GetWalletsData();
+    RefreshDashboard();
 
     transactionWindow_.BindDataManager(&dataManager_);
     transactionWindow_.SetOnBack([this]() {
+        RefreshDashboard();
         currentScreen = DASHBOARD;
     });
 
     recurringWindow_.BindDataManager(&dataManager_);
     recurringWindow_.SetOnBack([this]() {
+        RefreshDashboard();
         currentScreen = DASHBOARD;
     });
 
     masterWindow_.BindDataManager(&dataManager_);
     masterWindow_.SetOnBack([this]() {
+        RefreshDashboard();
         currentScreen = DASHBOARD;
     });
 
     statisticWindow_.BindDataManager(&dataManager_);
     statisticWindow_.SetOnBack([this]() {
+        RefreshDashboard();
         currentScreen = DASHBOARD;
     });
 
@@ -60,8 +67,6 @@ void App::Update(float dt) {
 void App::Draw() {
     switch (currentScreen) {
     case DASHBOARD:
-        // Refresh wallet data when showing dashboard
-        data_ = dataManager_.GetWalletsData();
         drawDashboard(data_, [this](int index) {
             if (index == 0) { // Add Transaction
                 if (!transactionWindowInitialized) {
@@ -129,4 +134,14 @@ void App::Shutdown() {
         data_.wallets = nullptr;
         data_.walletCount = 0;
     }
+}
+
+void App::RefreshDashboard() {
+    // Free old data
+    if (data_.wallets != nullptr) {
+        delete[] data_.wallets;
+        data_.wallets = nullptr;
+    }
+    // Load new data once
+    data_ = dataManager_.GetWalletsData();
 }

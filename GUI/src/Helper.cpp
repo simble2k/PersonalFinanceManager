@@ -133,6 +133,9 @@ void DrawFormErrorTextIndicator(const Rectangle& addButton, int errorid) {
             break;
         case 8:
             errorText = "Invalid ID! (should be positive integer)";
+        case 9:
+            errorText = "Insufficient funds in selected wallet!";
+            break;
         default:
             errorText = "Form contains errors!";
             break;

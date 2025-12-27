@@ -46,4 +46,6 @@ private:
     bool recurringWindowInitialized = false;
     bool masterWindowInitialized = false;
     bool statisticWindowInitialized = false;
+
+    void RefreshDashboard();
 };

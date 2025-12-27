@@ -2,6 +2,7 @@
 #include "ScrollArea.h"
 #include "Helper.h"
 #include "raylib.h"
+#include "statistic.h"
 #include <string>
 #include <cstdio>
 
@@ -423,6 +424,15 @@ void TransactionWindow::SubmitExpense() {
     if (walletId < 0) { errorID = 4; return; } // wallet not selected
     if (categoryId < 0) { errorID = 6; return; } // category not selected
 
+    // Calculate current balance of the selected wallet
+    double currentBal = getWalletBalance(walletId, dataManagerRef->incomes_, dataManagerRef->expenses_);
+    
+    // Check if expense exceeds balance
+    if (amount > currentBal) {
+        errorID = 9; // New Error Code for Insufficient Funds
+        return;
+    }
+
     date today = getCurrentDate();
     dataManagerRef->expenses_.addTransaction(today, amount, categoryId, walletId, desc);
     dataManagerRef->SaveAllData();
@@ -470,8 +480,12 @@ void TransactionWindow::DrawAddIncomeDialog() {
     if (incomeWalletDropdown) incomeWalletDropdown->DrawListOverlay();
     if (incomeSourceDropdown) incomeSourceDropdown->DrawListOverlay();
 
-    // Error indicator
-    DrawFormErrorTextIndicator(addIncomeDialog.GetRect(), errorID);
+    Rectangle addButtonRect = { 
+        incomeDialogRect.x + incomeDialogRect.width - 220, 
+        incomeDialogRect.y + incomeDialogRect.height - 70, 
+        100, 46 
+    };
+    DrawFormErrorTextIndicator(addButtonRect, errorID);
 }
 
 void TransactionWindow::DrawAddExpenseDialog() {
@@ -494,8 +508,13 @@ void TransactionWindow::DrawAddExpenseDialog() {
     if (expenseWalletDropdown) expenseWalletDropdown->DrawListOverlay();
     if (expenseCategoryDropdown) expenseCategoryDropdown->DrawListOverlay();
 
-    // Error indicator
-    DrawFormErrorTextIndicator(addExpenseDialog.GetRect(), errorID);
+    // Calculate the exact position of the "Add" button relative to the screen
+    Rectangle addButtonRect = { 
+        expenseDialogRect.x + expenseDialogRect.width - 220, 
+        expenseDialogRect.y + expenseDialogRect.height - 70, 
+        100, 46 
+    };
+    DrawFormErrorTextIndicator(addButtonRect, errorID);
 }   
 
 void TransactionWindow::DrawConfirmDialog() {
