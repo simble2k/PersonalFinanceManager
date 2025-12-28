@@ -41,52 +41,7 @@ See the application in action:
 
 ## 🚀 How to Run
 
-### Option 1: Run Pre-built Binary (Easiest)
-
-If you just want to use the app without coding:
-
-#### Prebuilt (Windows)
-- Download `dist/PersonalFinanceManager-Windows.zip` from the repository (or Releases).
-- Extract and run `PersonalFinanceManager-Windows.exe`.
-- Ensure `raylib.dll` and `glfw3.dll` are in the same folder as the `.exe` (both bundled in the prebuild ZIP).
-- Requires Microsoft Visual C++ Redistributable (2015–2022). If missing, install from https://aka.ms/vs/17/release/vc_redist.x64.exe.
-
-#### Prebuilt (macOS)
-- Download the prebuilt executable from `prebuild/PersonalFinanceManager` in the repository.
-- Make it executable: `chmod +x PersonalFinanceManager`.
-- Run: `./PersonalFinanceManager`.
-- If blocked by Gatekeeper, allow under System Settings → Privacy & Security → "Open Anyway".
-
-### Option 2: Build from Source
-
-To build the project yourself, you will need a C++17 compatible compiler and the Raylib library.
-
-#### 🪟 Windows (MinGW / MSYS2)
-
-1.  **Prerequisites:** Install MinGW (`g++`) and download the [Raylib](https://www.raylib.com/) library.
-2.  **Compile:** Run the following command in your terminal (adjust paths to your Raylib installation):
-    ```powershell
-    g++ -std=c++17 GUI/mainGUI.cpp GUI/src/*.cpp src/*.cpp \
-    -Iinclude -IGUI/include \
-    -o finance_app.exe \
-    -Llib -lraylib -lopengl32 -lgdi32 -lwinmm -static
-    ```
-3.  **Run:** `./finance_app.exe`
-
-#### 🍎 macOS
-
-1.  **Prerequisites:** Install Raylib via Homebrew:
-    ```bash
-    brew install raylib
-    ```
-2.  **Compile:**
-    ```bash
-    clang++ -std=c++17 GUI/mainGUI.cpp GUI/src/*.cpp src/*.cpp \
-    -Iinclude -IGUI/include \
-    -o finance_app \
-    -lraylib -framework IOKit -framework Cocoa -framework OpenGL
-    ```
-3.  **Run:** `./finance_app`
+Open run_app.exe and it should run without any problems.
 
 ---
 
