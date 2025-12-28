@@ -1,3 +1,5 @@
+#ifndef STATISTIC_H
+#define STATISTIC_H
 #include <iostream>
 #include <iomanip>
 #include "date.h"
@@ -7,22 +9,43 @@
 #include "Category.h"
 #include "IncomeSourceTable.h"
 
-//Dùng để lưu tạm chi/tiêu theo wallet/category/source
-#pragma once
+struct TimeReport {
+    double totalIncome;
+    double totalExpense;
+    double netBalance;
+};
+
+struct BreakdownItem {
+    string name;       
+    double amount;     
+    double percentage; 
+};
+
+struct BreakdownReport {
+    double totalAmount;
+    int count;             // Số lượng phần tử trong mảng items
+    BreakdownItem* items;  // Con trỏ quản lý mảng động
+};
+
+struct WalletStatRecord {
+    string walletName;
+    double amount;
+};
+
 struct StatRecord {
     int id;         // ID của Wallet, Category, hoặc Source
     double amount;  // Tổng tiền
 };
 
 void updateStatRecord(StatRecord* records, int& count, int id, double amount);
-void statTimeBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArray& expenses);
-void statWalletBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArray& expenses, WalletTable& wallets);
-void statAnnualOverview(IncomeArray& incomes, ExpenseArray& expenses);
+TimeReport getStatTimeBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArray& expenses);
+WalletStatRecord* IncWalletBased(date fromDate, date toDate, IncomeArray& incomes, WalletTable& wallets, int& count);
+WalletStatRecord* ExpWalletBased(date fromDate, date toDate, ExpenseArray& expenses, WalletTable& wallets, int& count);
+TimeReport getAnnualOverview(int* selectedYears, int n, IncomeArray& incomes, ExpenseArray& expenses);
 bool isYearSelected(int year, int* selectedYears, int count);
-void incomeAnnualBreakdown(IncomeArray& incomes, IncomeSourceTable& sources);
-void expenseAnnualBreakdown(ExpenseArray& expenses, CategoryTable& categories);
-void statisticMenu(IncomeArray& incomes, ExpenseArray& expenses, 
-                   WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories);
+BreakdownReport incomeAnnualBreakdown(int* selectedYears, int n, IncomeArray& incomes, IncomeSourceTable& sources);
+BreakdownReport expenseAnnualBreakdown(int* selectedYears, int n, ExpenseArray& expenses, CategoryTable& categories);
 double getWalletBalance(int walletID, IncomeArray& incomes, ExpenseArray& expenses);
 void viewTransactionHistory(IncomeArray& incomes, ExpenseArray& expenses, 
                             WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories);
+#endif
