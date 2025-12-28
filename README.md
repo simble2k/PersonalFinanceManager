@@ -43,17 +43,14 @@ See the application in action:
 
 ### Option 1: Run Pre-built Binary (Easiest)
 
-#### Prebuilt (Windows)
-- Download `dist/PersonalFinanceManager-Windows.zip` from the repository (or Releases).
-- Extract and run `PersonalFinanceManager-Windows.exe`.
-- Ensure `raylib.dll` and `glfw3.dll` are in the same folder as the `.exe` (both bundled in the prebuild ZIP).
-- Requires Microsoft Visual C++ Redistributable (2015–2022). If missing, install from https://aka.ms/vs/17/release/vc_redist.x64.exe.
+If you just want to use the app without coding:
 
-#### Prebuilt (macOS)
-- Download the prebuilt executable from `prebuild/PersonalFinanceManager` in the repository.
-- Make it executable: `chmod +x PersonalFinanceManager`.
-- Run: `./PersonalFinanceManager`.
-- If blocked by Gatekeeper, allow under System Settings → Privacy & Security → "Open Anyway".
+1.  Go to the **[Releases]** page of this repository (or check the `bin/` folder if provided).
+2.  Download the version for your OS:
+    * **Windows:** `finance_app.exe`
+    * **macOS:** `finance_app`
+3.  **Important:** Ensure the `saves/` folder exists in the same directory as the executable (the app will create it if missing, but permissions are required).
+4.  Double-click to launch!
 
 ### Option 2: Build from Source
 
@@ -101,3 +98,44 @@ PersonalFinanceManager/
 ├── src/               # Backend Logic (Data structures, File I/O)
 ├── saves/             # Binary data storage (Generated at runtime)
 └── README.md
+```
+## 🏗️ Technology Stack
+Language: C++17
+
+GUI Library: Raylib v5.5
+
+Data Structures: Custom Hash Tables (NameTable) & Dynamic Arrays.
+
+Persistence: Custom Binary Serialization.
+
+## 👥 Contributors
+Phạm Quốc Bảo:
+
+• Backend Architecture: Core logic for Transactions and
+Recurring Manager (IncomeTransaction.cpp, Expense-
+Transaction.cpp, recurring.cpp).
+• Data Management: Designed NameTable structure and
+Binary Persistence (Save/Load).
+• System Reliability: Developed Console Interface (CLI),
+Logic Validation, and Technical Documentation.
+• Testing Support: Assisted with manual testing scenar-
+ios and bug reporting.
+
+Nguyễn Quốc Bảo:
+
+• User Interface (GUI): Implementation of the graphical
+interface using Raylib.
+• Component Design: Created reusable UI widgets (But-
+tons, Dropdowns, ScrollAreas).
+• Visual Layout: Designed the Dashboard and Window
+layouts.
+
+Lê Nguyễn Hải Đăng:
+
+• Statistic Reporting: Core logic for Statistic & Report-
+ing features and helpers function (Developed statistic.cpp,
+date.cpp)
+• Testing Support: Assisted with testing Statistic & Re-
+porting functions by Statistic Menu on Console.
+
+<p align="center"> <sub>Made with ❤️ for CS160 Final Project</sub> </p>
