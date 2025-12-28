@@ -23,3 +23,4 @@ void DrawFormErrorTextIndicator(const Rectangle& addButton, int errorid = -1); /
                                                                                 // 6 for no category selected
                                                                                 // 7 for empty description
                                                                                 // 8 for invalid ID
+                                                                                // 9 for notenough money in wallet (transaction)
