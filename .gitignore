@@ -1,14 +1,12 @@
 # Build files
 .vscode/
+.github/
 
 # Test files
 test.cpp
 
 # Saves and databases
 saves/*.dat
-
-# text files
-*.txt
 
 # Prerequisites
 *.d
@@ -32,7 +30,9 @@ saves/*.dat
 # Compiled Dynamic libraries
 *.so
 *.dylib
-*.dll
+
+# Allow shipping runtime DLLs in prebuild
+!prebuild/*.dll
 
 # Fortran module files
 *.mod
@@ -49,5 +49,13 @@ saves/*.dat
 *.out
 *.app
 
+# Allow prebuilt Windows exe
+!prebuild/*.exe
+
 # debug information files
 *.dwo
+
+# CMake build directory
+build/
+# Other build folders
+build-*/

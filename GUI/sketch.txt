@@ -1,0 +1,30 @@
+1. The dashboard menu -> already coded at home , show s all the wallets and the current total money across all wallet . On the right side is buttons to navigate to 4 different features.
+    Features :
+        - Transaction window -> 2 add transaction buttons ( incomes or expenses ) and shows the history of transactions.
+            + When clicked the add income or expenses button -> shows a smaller window (dialog) for adding the income
+                +The dialog:
+                    + Input wallet(dropdown), incomesource (dropdown), amount of money(textinput) , description(textinput)
+                    + 2 buttons in the lowest : Add (green) and Cancle (red) 
+                + when added have a small confirm window and options to keep adding or go to dashboard.
+            + The add expense button is the same. but change the incomesource -> category
+            + When show the transaction window , the format will look like : 1 returning button on top left (also have the big text "transaction") , 2 add button on top right , lower is 2 big scrollable list of income history and expense history.
+        - Recurring window :
+            + Also a returning button on top left ( also have the big text "recurring")
+            + 2 add buttons on top left (recurring incomes and recurring expenses)
+                + Also show a window for user to interact add recurring incomes or expenses when clicked the buttons.
+                    +Dialog : the same as transactions but have start date and end date (end date is Optional -> default is no ending recurring)
+            + 1 big scrollable list of recurring objects.
+        - Master Data :
+            + Also a returning button on top left ( also have the big text "Master Data")
+            + 3 buttons on top left (add, delete and edit)
+            + 3 collums lower :
+                + first column is wallets ( a chooseable scrollable list )
+                + second column is devided in 2 : income sources on the upper and category lists lower ( both chooseable scrollable lists)
+                + third column is transactions
+            ** How the column works : when opened, only the first column shows
+                - when select one of the wallets , the incomesources and categories appears (if none , display "no sources" or "no categories")
+                - when select one of the sources or categories , appears all the transaction form that source or to that categoriy
+                - there is a color indication that you are selecting a wallet , a source or a category , if in which area , the add, edit and delete button will works for that wallet , source or category.
+
+        - Statistic :
+            + Temporarily this i havent got any ideas.

@@ -22,78 +22,86 @@ void updateStatRecord(StatRecord* records, int& count, int id, double amount) {
     count++;
 }
 
-void statTimeBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArray& expenses) {
-    double totalInc = 0;
-    double totalExp = 0;
+//Stat time-based
+TimeReport getStatTimeBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArray& expenses) {
+    TimeReport report = {0, 0, 0};
 
     for (int i = 0; i < incomes.getCount(); i++) {
         IncomeTransaction t = incomes.getAt(i);
-
         if (compareDate(t.day, fromDate) >= 0 && compareDate(t.day, toDate) <= 0) {
-            totalInc += t.amount;
+            report.totalIncome += t.amount;
         }
     }
 
     for (int i = 0; i < expenses.getCount(); i++) {
         ExpenseTransaction t = expenses.getAt(i);
         if (compareDate(t.day, fromDate) >= 0 && compareDate(t.day, toDate) <= 0) {
-            totalExp += t.amount;
+            report.totalExpense += t.amount;
         }
     }
 
-    cout << "\n--- THONG KE THEO THOI GIAN ---\n";
-    cout << "Tu ngay: "; printDate(fromDate); cout << " Den ngay: "; printDate(toDate); cout << endl;
-    cout << "Tong Thu: " << (long long)totalInc << endl;
-    cout << "Tong Chi: " << (long long)totalExp << endl;
-    cout << "So Du (Net): " << (long long)(totalInc - totalExp) << endl;
+    report.netBalance = report.totalIncome - report.totalExpense;
+    return report;
 }
+//trả về timereport gồm tổng thu, tổng chi, netbalance
 
 //Time & Wallet Based
-void statWalletBased(date fromDate, date toDate, IncomeArray& incomes, ExpenseArray& expenses, WalletTable& wallets) {
-    StatRecord* walletIncs = new StatRecord[100];
-    StatRecord* walletExps = new StatRecord[100];
+//Hàm này trả về 1 mảng chứa tổng thu ở tất cả các ví
+WalletStatRecord* IncWalletBased(date fromDate, date toDate, IncomeArray& incomes, WalletTable& wallets, int& count) {
+
+    StatRecord* tempRecords = new StatRecord[100]; 
     int countInc = 0;
-    int countExp = 0;
 
     for (int i = 0; i < incomes.getCount(); i++) {
         IncomeTransaction t = incomes.getAt(i);
         if (compareDate(t.day, fromDate) >= 0 && compareDate(t.day, toDate) <= 0) {
-            updateStatRecord(walletIncs, countInc, t.walletID, t.amount);
+            updateStatRecord(tempRecords, countInc, t.walletID, t.amount);
         }
     }
 
+
+    count = countInc; //đây là số lượng ví
+    WalletStatRecord* result = new WalletStatRecord[count];
+
+    for (int i = 0; i < count; i++) {
+        result[i].walletName = wallets.getWalletName(tempRecords[i].id);
+        result[i].amount = tempRecords[i].amount;
+    }
+
+    delete[] tempRecords;
+    return result;
+}//hàm này có 2 thứ cần quan tâm là mảng trả về chứa tổng tiền thu, tên của ví 
+//và biến count để đến số lượng ví
+
+
+//Hàm này trả về 1 mảng chứa tổng chi ở tất cả các ví
+WalletStatRecord* ExpWalletBased(date fromDate, date toDate, ExpenseArray& expenses, WalletTable& wallets, int& count) {
+    // 1. Mảng tạm
+    StatRecord* tempRecords = new StatRecord[100];
+    int ExpCount = 0;
+
+    // 2. Quét transaction
     for (int i = 0; i < expenses.getCount(); i++) {
         ExpenseTransaction t = expenses.getAt(i);
         if (compareDate(t.day, fromDate) >= 0 && compareDate(t.day, toDate) <= 0) {
-            updateStatRecord(walletExps, countExp, t.walletID, t.amount);
+            updateStatRecord(tempRecords, ExpCount, t.walletID, t.amount);
         }
     }
 
+    count = ExpCount;
+    WalletStatRecord* result = new WalletStatRecord[count];
 
-
-    cout << "\n--- CHI TIET THEO VI (WALLET) ---\n";
-    cout << left << setw(25) << "Ten Vi" 
-         << right << setw(15) << "Thu Vao" 
-         << right << setw(15) << "Chi Ra" << endl;
-    
-    // In các ví có Thu
-    for(int i=0; i<countInc; i++) {
-         string name = wallets.getWalletName(walletIncs[i].id);
-         cout << left << setw(25) << name 
-              << right << setw(15) << (long long)walletIncs[i].amount 
-              << right << setw(15) << "-" << endl;
-    }
-    // In các ví có Chi 
-    for(int i=0; i<countExp; i++) {
-         string name = wallets.getWalletName(walletExps[i].id);
-         cout << left << setw(25) << name 
-              << right << setw(15) << "-" 
-              << right << setw(15) << (long long)walletExps[i].amount << endl;
+    for (int i = 0; i < count; i++) {
+        result[i].walletName = wallets.getWalletName(tempRecords[i].id);
+        result[i].amount = tempRecords[i].amount;
     }
 
-    delete[] walletIncs;
-    delete[] walletExps;
-}
+    delete[] tempRecords;
+
+    return result;
+}//hàm này có 2 thứ cần quan tâm là mảng trả về chứa tổng tiền chi, tên của ví 
+//và biến count để đến số lượng ví
+
 
 //Annual Income/Expense Breakdown
 bool isYearSelected(int year, int* selectedYears, int count) {
@@ -105,202 +113,103 @@ bool isYearSelected(int year, int* selectedYears, int count) {
     return false;
 }
 
-void statAnnualOverview(IncomeArray& incomes, ExpenseArray& expenses) {
-    int n;
-    cout << "\n--- TONG QUAN TAI CHINH THEO NAM ---\n";
-    cout << "Ban muon xem bao cao cho bao nhieu nam? (Nhap so luong): ";
-    cin >> n;
-
-    if (n <= 0) {
-        cout << "So luong nam khong hop le!\n";
-        return;
-    }
-
-    int* selectedYears = new int[n];
-    cout << "Nhap cac nam can xem (cach nhau boi dau cach): ";
-    for (int i = 0; i < n; i++) {
-        cin >> selectedYears[i];
-    }
-
-    double totalInc = 0;
-    double totalExp = 0;
-
-    //Income
+//giống time report
+TimeReport getAnnualOverview(int* selectedYears, int n, IncomeArray& incomes, ExpenseArray& expenses) {
+    TimeReport report = {0, 0, 0}; // Khởi tạo bằng 0
+    
     for (int i = 0; i < incomes.getCount(); i++) {
         IncomeTransaction t = incomes.getAt(i);
-
         if (isYearSelected(t.day.year, selectedYears, n)) {
-            totalInc += t.amount;
+            report.totalIncome += t.amount;
         }
     }
 
-    //Expense
     for (int i = 0; i < expenses.getCount(); i++) {
         ExpenseTransaction t = expenses.getAt(i);
-
         if (isYearSelected(t.day.year, selectedYears, n)) {
-            totalExp += t.amount;
+            report.totalExpense += t.amount;
         }
     }
 
-    cout << "\n--------------------------------------------\n";
-    cout << "BAO CAO TONG HOP NAM: ";
-    for (int i = 0; i < n; i++) cout << selectedYears[i] << (i < n-1 ? ", " : "");
-    cout << endl;
-    cout << "--------------------------------------------\n";
-    cout << left << setw(20) << "TONG THU (Income): "  << right << setw(15) << (long long)totalInc << endl;
-    cout << left << setw(20) << "TONG CHI (Expense): " << right << setw(15) << (long long)totalExp << endl;
-    cout << "--------------------------------------------\n";
-    
-    double netBalance = totalInc - totalExp;
-    cout << left << setw(20) << "SO DU (Net Balance): " << right << setw(15) << (long long)netBalance << endl;
-    cout << "============================================\n";
+    report.netBalance = report.totalIncome - report.totalExpense;
 
-    delete[] selectedYears;
+    return report;
 }
 
 //Income and Expense annually Source/Category-Based
-void incomeAnnualBreakdown(IncomeArray& incomes, IncomeSourceTable& sources) {
-    int n;
-    cout << "\n--- PHAN TICH NGUON THU THEO NAM ---\n";
-    cout << "Ban muon xem bao cao cho bao nhieu nam? "; cin >> n;
-    
-    int* selectedYears = new int[n];
-    cout << "Nhap cac nam (cach nhau boi dau cach): ";
-    for (int i = 0; i < n; i++) cin >> selectedYears[i];
+BreakdownReport incomeAnnualBreakdown(int* selectedYears, int n, IncomeArray& incomes, IncomeSourceTable& sources) {
+    BreakdownReport report;
+    report.totalAmount = 0;
+    report.count = 0;
 
-    // Dùng mảng tạm để thống kê (Max 100 nguồn thu - đủ cho project)
-    StatRecord* records = new StatRecord[100]; 
-    int count = 0;
-    double totalAll = 0;
+    StatRecord* tempRecords = new StatRecord[100]; 
+    int incCount = 0;
 
-    // Duyệt qua tất cả giao dịch
     for (int i = 0; i < incomes.getCount(); i++) {
         IncomeTransaction t = incomes.getAt(i);
-        
-        // Nếu giao dịch thuộc năm đã chọn
         if (isYearSelected(t.day.year, selectedYears, n)) {
-            totalAll += t.amount;
-            updateStatRecord(records, count, t.sourceID, t.amount);
+            report.totalAmount += t.amount;
+            updateStatRecord(tempRecords, incCount, t.sourceID, t.amount);
         }
     }
 
-    // Hiển thị báo cáo
-    cout << "\n------------------------------------------------------------\n";
-    cout << "BAO CAO PHAN TICH NGUON THU (Nam: ";
-    for (int i = 0; i < n; i++) cout << selectedYears[i] << (i < n-1 ? ", " : "");
-    cout << ")\n";
-    cout << "------------------------------------------------------------\n";
-    cout << left << setw(25) << "Nguon Thu" 
-         << right << setw(15) << "So Tien" 
-         << right << setw(10) << "Ti Le" << endl;
-    cout << "------------------------------------------------------------\n";
+    report.items = new BreakdownItem[incCount];
+    report.count = incCount;
 
-    if (totalAll == 0) {
-        cout << "  (Khong co du lieu thu nhap trong nam nay)\n";
-    } else {
-        for (int i = 0; i < count; i++) {
-            string name = sources.getSourceName(records[i].id);
-            double percent = (records[i].amount / totalAll) * 100.0;
-            
-            cout << left << setw(25) << name 
-                 << right << setw(15) << (long long)records[i].amount 
-                 << right << setw(9) << fixed << setprecision(1) << percent << "%" << endl;
-        }
-        cout << "------------------------------------------------------------\n";
-        cout << left << setw(25) << "TONG CONG:" 
-             << right << setw(15) << (long long)totalAll << endl;
+    for(int i = 0; i < incCount; i++) {
+        report.items[i].name = sources.getSourceName(tempRecords[i].id);
+        report.items[i].amount = tempRecords[i].amount;
+        
+        if (report.totalAmount > 0)
+            report.items[i].percentage = (report.items[i].amount / report.totalAmount) * 100.0;
+        else
+            report.items[i].percentage = 0;
     }
-    cout << "============================================================\n";
 
-    delete[] selectedYears;
-    delete[] records;
+    delete[] tempRecords;
+    return report; //trả về breakdownreport gồm: tổng thu, số lượng source,
+    //mảng breakdownitem chứa record của từng nguồn thu (gồm sourceName, amount, percentage)
 }
 
-void expenseAnnualBreakdown(ExpenseArray& expenses, CategoryTable& categories) {
-    int n;
-    cout << "\n--- PHAN TICH CHI TIEU THEO DANH MUC ---\n";
-    cout << "Ban muon xem bao cao cho bao nhieu nam? "; cin >> n;
-    
-    int* selectedYears = new int[n];
-    cout << "Nhap cac nam (cach nhau boi dau cach): ";
-    for (int i = 0; i < n; i++) cin >> selectedYears[i];
+// Hàm này trả về BreakdownReport (chứa danh sách BreakdownItem)
+BreakdownReport expenseAnnualBreakdown(int* selectedYears, int n, ExpenseArray& expenses, CategoryTable& categories) {
+    BreakdownReport report;
+    report.totalAmount = 0;
+    report.count = 0;
 
-    StatRecord* records = new StatRecord[100];
-    int count = 0;
-    double totalAll = 0;
+    StatRecord* tempRecords = new StatRecord[100]; 
+    int expCount = 0;
 
     for (int i = 0; i < expenses.getCount(); i++) {
         ExpenseTransaction t = expenses.getAt(i);
         
         if (isYearSelected(t.day.year, selectedYears, n)) {
-            totalAll += t.amount;
-            updateStatRecord(records, count, t.categoryID, t.amount);
+            report.totalAmount += t.amount;
+            updateStatRecord(tempRecords, expCount, t.categoryID, t.amount);
         }
     }
 
-    cout << "\n------------------------------------------------------------\n";
-    cout << "BAO CAO PHAN TICH CHI TIEU (Nam: ";
-    for (int i = 0; i < n; i++) cout << selectedYears[i] << (i < n-1 ? ", " : "");
-    cout << ")\n";
-    cout << "------------------------------------------------------------\n";
-    cout << left << setw(25) << "Danh Muc Chi" 
-         << right << setw(15) << "So Tien" 
-         << right << setw(10) << "Ti Le" << endl;
-    cout << "------------------------------------------------------------\n";
+    report.items = new BreakdownItem[expCount];
+    report.count = expCount;
 
-    if (totalAll == 0) {
-        cout << "  (Khong co du lieu chi tieu trong nam nay)\n";
-    } else {
-        for (int i = 0; i < count; i++) {
-            string name = categories.getCategoryName(records[i].id);
-            double percent = (records[i].amount / totalAll) * 100.0;
-            
-            cout << left << setw(25) << name 
-                 << right << setw(15) << (long long)records[i].amount 
-                 << right << setw(9) << fixed << setprecision(1) << percent << "%" << endl;
+    for(int i = 0; i < expCount; i++) {
+        report.items[i].name = categories.getCategoryName(tempRecords[i].id);
+        report.items[i].amount = tempRecords[i].amount;
+        
+        if (report.totalAmount > 0) {
+            report.items[i].percentage = (report.items[i].amount / report.totalAmount) * 100.0;
+        } else {
+            report.items[i].percentage = 0;
         }
-        cout << "------------------------------------------------------------\n";
-        cout << left << setw(25) << "TONG CONG:" 
-             << right << setw(15) << (long long)totalAll << endl;
     }
-    cout << "============================================================\n";
 
-    delete[] selectedYears;
-    delete[] records;
+    delete[] tempRecords;
+    
+    return report;
+    //trả về breakdownreport gồm: tổng chi, số lượng category,
+    //mảng chứa record của từng nguồn chi (gồm categoryName, amount, percentage)
 }
 
-void statisticMenu(IncomeArray& incomes, ExpenseArray& expenses, 
-                   WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories) {
-    int choice;
-    do {
-        cout << "\n=== STATISTICS & REPORTING ===\n";
-        cout << "1. Xem Lich su giao dich chi tiet (Transaction Log)\n"; // <--- MỚI
-        cout << "2. Thong ke theo khoang thoi gian (Time-based)\n";
-        cout << "3. Thong ke chi tiet theo Vi (Wallet-based)\n";
-        cout << "4. Tong quan Thu/Chi nhieu nam (Overview)\n"; 
-        cout << "5. Phan tich Nguon Thu (Income Breakdown)\n";
-        cout << "6. Phan tich Danh Muc Chi (Expense Breakdown)\n";
-        cout << "0. Quay lai\n";
-        cout << "Chon chuc nang: ";
-        cin >> choice;
-
-        switch(choice) {
-            case 1: 
-                viewTransactionHistory(incomes, expenses, wallets, sources, categories);
-                break;
-            case 2:
-                { date d1, d2; /*...*/ statTimeBased(d1, d2, incomes, expenses); }
-                break;
-            case 3:
-                { date d1, d2; /*...*/ statWalletBased(d1, d2, incomes, expenses, wallets); }
-                break;
-            case 4: statAnnualOverview(incomes, expenses); break;
-            case 5: incomeAnnualBreakdown(incomes, sources); break;
-            case 6: expenseAnnualBreakdown(expenses, categories); break;
-        }
-    } while (choice != 0);
-}
 double getWalletBalance(int walletID, IncomeArray& incomes, ExpenseArray& expenses) {
     double totalIncome = 0;
     double totalExpense = 0;
@@ -321,6 +230,9 @@ double getWalletBalance(int walletID, IncomeArray& incomes, ExpenseArray& expens
 
     return totalIncome - totalExpense;
 }
+
+
+
 void viewTransactionHistory(IncomeArray& incomes, ExpenseArray& expenses, 
                             WalletTable& wallets, IncomeSourceTable& sources, CategoryTable& categories) {
     
