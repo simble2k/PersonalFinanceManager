@@ -4,9 +4,14 @@ project(PersonalFinanceManager VERSION 0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Raylib paths for Linux build
-set(RAYLIB_INCLUDE_DIR /tmp/raylib/src)
-set(RAYLIB_LIB_DIR /tmp/raylib/src)
+# Set vcpkg toolchain file if not already set
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        CACHE STRING "Vcpkg toolchain file")
+endif()
+
+# Find raylib package
+find_package(raylib CONFIG REQUIRED)
 
 # Source files
 set(SOURCE_FILES
@@ -42,15 +47,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/GUI/include
-    ${RAYLIB_INCLUDE_DIR}
 )
 
-# Link raylib and dependencies
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    ${RAYLIB_LIB_DIR}/libraylib.a
-    glfw
-    GL
-    m
-    pthread
-    dl
-)
+# Link raylib
+target_link_libraries(${PROJECT_NAME} PRIVATE raylib)

@@ -47,17 +47,53 @@ private:
     // Dialogs for input
     Dialog dateRangeDialog_;
     Dialog walletSelectDialog_;
+    Dialog yearSelectDialog_;
     bool showDateRangeDialog_ = false;
     bool showWalletSelectDialog_ = false;
+    bool showYearSelectDialog_ = false;
 
-    // Dropdown for wallet selection
+    // Dropdowns for selection
     Dropdown* walletDropdown_ = nullptr;
+    Dropdown* yearDropdown_ = nullptr;
 
     // Results display
     ScrollArea resultsArea_;
     std::string* reportLines_ = nullptr;
     int reportLineCount_ = 0;
     int reportLineCapacity_ = 0;
+    std::string reportTitle_;
+
+    // Styled rendering state for time-based summary
+    bool hasTimeBasedData_ = false;
+    date tbFrom_{};
+    date tbTo_{};
+    TimeReport tbReport_{};
+
+    // Styled rendering state for annual overview
+    bool hasAnnualOverviewData_ = false;
+    TimeReport aoReport_{};
+    std::string aoPeriod_{}; // e.g., "2023, 2024"
+
+    // Styled rendering state for wallet balance
+    bool hasWalletBalanceData_ = false;
+    double wbIncome_ = 0.0;
+    double wbExpense_ = 0.0;
+    double wbBalance_ = 0.0;
+    std::string wbWalletName_{};
+
+    // Styled rendering state for wallet-based summary table
+    bool hasWalletBasedStyledData_ = false;
+    struct WalletRow { int id; std::string name; double income; double expense; double balance; };
+    WalletRow* walletRows_ = nullptr;
+    int walletRowCount_ = 0;
+
+    // Styled rendering state for breakdown tables (income/expense)
+    bool hasIncomeBreakdownStyledData_ = false;
+    bool hasExpenseBreakdownStyledData_ = false;
+    struct BreakdownRow { std::string name; double amount; double percentage; };
+    BreakdownRow* breakdownRows_ = nullptr;
+    int breakdownRowCount_ = 0;
+    double breakdownTotal_ = 0.0;
 
     std::function<void()> onBackRequested_;
 
@@ -71,7 +107,7 @@ private:
     // report generators
     void ShowTimeBasedStats(date fromDate, date toDate);
     void ShowWalletBasedStats();
-    void ShowAnnualOverview();
+    void ShowAnnualOverview(int* selectedYears, int yearCount);
     void ShowIncomeBreakdown();
     void ShowExpenseBreakdown();
     void ShowWalletBalance(int walletID);
@@ -81,5 +117,7 @@ private:
     void SubmitDateRange();
     void OpenWalletSelectDialog();
     void SubmitWalletSelect();
+    void OpenYearSelectDialog();
+    void SubmitYearSelect();
     void CloseDialogs();
 };

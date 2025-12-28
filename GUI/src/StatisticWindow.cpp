@@ -20,6 +20,10 @@ StatisticWindow::~StatisticWindow() {
         delete walletDropdown_;
         walletDropdown_ = nullptr;
     }
+    if (yearDropdown_) {
+        delete yearDropdown_;
+        yearDropdown_ = nullptr;
+    }
 }
 
 void StatisticWindow::Init() {
@@ -49,7 +53,7 @@ void StatisticWindow::Init() {
     
     annualOverviewBtn_ = Button(buttonRects[2].x, buttonRects[2].y, BTN_W, BTN_H,
                                 "3. Annual Overview", SKYBLUE, BLUE, WHITE,
-                                [this]() { ShowAnnualOverview(); });
+                                [this]() { OpenYearSelectDialog(); });
     
     incomeBreakdownBtn_ = Button(buttonRects[3].x, buttonRects[3].y, BTN_W, BTN_H,
                                  "4. Income Breakdown", ORANGE, DARKGRAY, BLACK,
@@ -65,22 +69,30 @@ void StatisticWindow::Init() {
 
     delete[] buttonRects;
 
-    // Initialize date range dialog
-    dateRangeDialog_ = Dialog(STATS_SCREEN_W / 2.0f - 200.0f, STATS_SCREEN_H / 2.0f - 150.0f, 400.0f, 300.0f, "Enter Date Range");
-    dateRangeDialog_.AddTextInput(20, 60, 360, 40, "Start Date (DD/MM/YYYY)");
-    dateRangeDialog_.AddTextInput(20, 120, 360, 40, "End Date (DD/MM/YYYY)");
-    dateRangeDialog_.AddButton(60, 200, 120, 40, "OK", BLUE, DARKBLUE, WHITE,
+    // Initialize date range dialog (extra spacing and room for labels)
+    dateRangeDialog_ = Dialog(STATS_SCREEN_W / 2.0f - 200.0f, STATS_SCREEN_H / 2.0f - 165.0f, 400.0f, 330.0f, "Enter Date Range");
+    // Inputs moved down to create more spacing between them
+    dateRangeDialog_.AddTextInput(20, 70, 360, 40, "Start Date (DD/MM/YYYY)");
+    dateRangeDialog_.AddTextInput(20, 150, 360, 40, "End Date (DD/MM/YYYY)");
+    // Buttons moved down to keep space between inputs and buttons
+    dateRangeDialog_.AddButton(60, 230, 120, 40, "OK", BLUE, DARKBLUE, WHITE,
                                [this]() { SubmitDateRange(); });
-    dateRangeDialog_.AddButton(220, 200, 120, 40, "Cancel", RED, MAROON, WHITE,
+    dateRangeDialog_.AddButton(220, 230, 120, 40, "Cancel", RED, MAROON, WHITE,
                                [this]() { CloseDialogs(); });
 
     // Initialize wallet select dialog
     walletSelectDialog_ = Dialog(STATS_SCREEN_W / 2.0f - 200.0f, STATS_SCREEN_H / 2.0f - 100.0f, 400.0f, 250.0f, "Select Wallet");
-    walletDropdown_ = new Dropdown(20, 60, 360, 40, "Select Wallet ID");
     walletSelectDialog_.AddButton(60, 140, 120, 40, "OK", BLUE, DARKBLUE, WHITE,
                                   [this]() { SubmitWalletSelect(); });
     walletSelectDialog_.AddButton(220, 140, 120, 40, "Cancel", RED, MAROON, WHITE,
                                   [this]() { CloseDialogs(); });
+
+    // Initialize year select dialog
+    yearSelectDialog_ = Dialog(STATS_SCREEN_W / 2.0f - 200.0f, STATS_SCREEN_H / 2.0f - 100.0f, 400.0f, 250.0f, "Select Year");
+    yearSelectDialog_.AddButton(60, 140, 120, 40, "OK", BLUE, DARKBLUE, WHITE,
+                                [this]() { SubmitYearSelect(); });
+    yearSelectDialog_.AddButton(220, 140, 120, 40, "Cancel", RED, MAROON, WHITE,
+                                [this]() { CloseDialogs(); });
 
     // Results area on left
     resultsArea_.Init((float)PADDING, PADDING + 80.0f, (float)(LEFT_COLUMN_WIDTH - 20), 
@@ -113,6 +125,12 @@ void StatisticWindow::Update() {
             walletDropdown_->Update();
         }
     }
+    if (showYearSelectDialog_) {
+        yearSelectDialog_.Update();
+        if (yearDropdown_) {
+            yearDropdown_->Update();
+        }
+    }
 
     // Update scroll area content height
     float contentH = (float)((reportLineCount_ > 0 ? reportLineCount_ : 1) * LINE_H);
@@ -122,9 +140,6 @@ void StatisticWindow::Update() {
 void StatisticWindow::Draw(DataManager& dm) {
     // Draw title
     LayoutHelper::CenterText("REPORTS & STATISTICS", 36, DARKBLUE, STATS_SCREEN_W / 2.0f, 20.0f);
-
-    // Draw column separator line
-    DrawLine(LEFT_COLUMN_WIDTH, PADDING, LEFT_COLUMN_WIDTH, STATS_SCREEN_H - PADDING, LIGHTGRAY);
 
     // Draw back button
     backBtn_.Draw();
@@ -138,36 +153,238 @@ void StatisticWindow::Draw(DataManager& dm) {
     walletBalanceBtn_.Draw();
 
     // Draw right column title
-    DrawText("--- FEATURES ---", RIGHT_COLUMN_START_X + 20, PADDING + 20, 20, DARKBLUE);
+    DrawText("--- FEATURES ---", RIGHT_COLUMN_START_X + 20, PADDING + 20, 27, DARKBLUE);
 
     // Draw results area border and content
     DrawRectangleLinesEx(Rectangle{ (float)PADDING, PADDING + 80.0f, 
                                     (float)(LEFT_COLUMN_WIDTH - 20), 
                                     (float)(STATS_SCREEN_H - PADDING * 2 - 80) }, 2.0f, LIGHTGRAY);
 
-    // Clip and draw report lines
+    // Draw report title centered at top of results area
+    if (!reportTitle_.empty()) {
+        int titleWidth = MeasureText(reportTitle_.c_str(), 20);
+        float titleX = PADDING + (LEFT_COLUMN_WIDTH - 20 - titleWidth) / 2.0f;
+        DrawText(reportTitle_.c_str(), titleX, PADDING + 90, 20, DARKBLUE);
+        
+        // Draw separator line below title
+        DrawLine(PADDING + 10, PADDING + 115, PADDING + LEFT_COLUMN_WIDTH - 30, PADDING + 115, LIGHTGRAY);
+    }
+
+    // Clip and draw content
     resultsArea_.Begin();
-    float y = PADDING + 80.0f - resultsArea_.GetOffset() + 8.0f;
-    for (int i = 0; i < reportLineCount_; ++i) {
-        DrawText(reportLines_[i].c_str(), PADDING + 12, y, 18, BLACK);
-        y += LINE_H;
+    float contentTop = PADDING + 80.0f - resultsArea_.GetOffset();
+    if (hasTimeBasedData_) {
+        // Styled time-based summary with right-aligned currency
+        char fromBuf[32], toBuf[32];
+        snprintf(fromBuf, sizeof(fromBuf), "%02d/%02d/%04d", tbFrom_.day, tbFrom_.month, tbFrom_.year);
+        snprintf(toBuf, sizeof(toBuf), "%02d/%02d/%04d", tbTo_.day, tbTo_.month, tbTo_.year);
+
+        float xLabel = PADDING + 12.0f;
+        float rightEdge = PADDING + (LEFT_COLUMN_WIDTH - 20);
+        const int padRight = 100;
+        float y = contentTop + (reportTitle_.empty() ? 10.0f : 50.0f);
+
+        // Period line just below the title
+        std::string period = std::string("Period: ") + fromBuf + " to " + toBuf;
+        DrawText(period.c_str(), (int)xLabel, (int)y, 22, DARKGRAY);
+        y += 50.0f;
+
+        auto drawAmount = [&](const char* label, const std::string& amountStr, int labelSize, Color labelColor, int valueSize, Color valueColor) {
+            DrawText(label, (int)xLabel, (int)y, labelSize, labelColor);
+            int tw = MeasureText(amountStr.c_str(), valueSize);
+            int vx = (int)(rightEdge - padRight - tw);
+            DrawText(amountStr.c_str(), vx, (int)y, valueSize, valueColor);
+            y += (float)(valueSize + 20);
+        };
+
+        drawAmount("Total Income:", FormatCurrency((long long)tbReport_.totalIncome), 24, BLACK, 30, GREEN);
+        drawAmount("Total Expense:", FormatCurrency((long long)tbReport_.totalExpense), 24, BLACK, 30, RED);
+        drawAmount("Net Balance:",  FormatCurrency((long long)tbReport_.netBalance),  28, BLACK, 35, DARKBLUE);
+    } else if (hasAnnualOverviewData_) {
+        // Styled annual overview with right-aligned currency
+        float xLabel = PADDING + 12.0f;
+        float rightEdge = PADDING + (LEFT_COLUMN_WIDTH - 20);
+        const int padRight = 100;
+
+        float y = contentTop + (reportTitle_.empty() ? 10.0f : 50.0f);
+
+        // Period under title
+        std::string periodText = std::string("Years: ") + aoPeriod_;
+        DrawText(periodText.c_str(), (int)xLabel, (int)y, 22, DARKGRAY);
+        y += 50.0f;
+
+        auto drawAmount = [&](const char* label, const std::string& amountStr, int labelSize, Color labelColor, int valueSize, Color valueColor) {
+            DrawText(label, (int)xLabel, (int)y, labelSize, labelColor);
+            int tw = MeasureText(amountStr.c_str(), valueSize);
+            int vx = (int)(rightEdge - padRight - tw);
+            DrawText(amountStr.c_str(), vx, (int)y, valueSize, valueColor);
+            y += (float)(valueSize + 20);
+        };
+
+        drawAmount("Total Income:", FormatCurrency((long long)aoReport_.totalIncome), 24, BLACK, 30, GREEN);
+        drawAmount("Total Expense:", FormatCurrency((long long)aoReport_.totalExpense), 24, BLACK, 30, RED);
+        drawAmount("Net Balance:",  FormatCurrency((long long)aoReport_.netBalance),  28, BLACK, 35, DARKBLUE);
+    } else if (hasWalletBasedStyledData_) {
+        // Styled wallet-based table with 4 columns: Wallet Name | Income | Expense | Balance
+        float xLabel = PADDING + 12.0f;
+        float rightEdge = PADDING + (LEFT_COLUMN_WIDTH - 20);
+        float availableWidth = rightEdge - xLabel;
+        
+        // Column widths spread evenly
+        float colWidth = availableWidth / 4.0f;
+        float col1X = xLabel;
+        float col2X = col1X + colWidth;
+        float col3X = col2X + colWidth +20.0f;
+        float col4X = col3X + colWidth;
+        
+        float y = contentTop + (reportTitle_.empty() ? 10.0f : 50.0f);
+
+        // Draw header row
+        DrawText("Wallet Name", (int)col1X, (int)y, 22, DARKGRAY);
+        DrawText("Income", (int)(col2X + colWidth / 2.0f - MeasureText("Income", 22) / 2.0f), (int)y, 22, DARKGRAY);
+        DrawText("Expense", (int)(col3X + colWidth / 2.0f - MeasureText("Expense", 22) / 2.0f), (int)y, 22, DARKGRAY);
+        DrawText("Balance", (int)(rightEdge - 20 - MeasureText("Balance", 22)), (int)y, 22, DARKGRAY);
+        y += 32.0f;
+
+        // Draw separator line below header
+        DrawLine((int)xLabel, (int)y, (int)(rightEdge - 10), (int)y, LIGHTGRAY);
+        y += 20.0f;
+
+        // Draw data rows
+        for (int i = 0; i < walletRowCount_; ++i) {
+            // Wallet Name (left-aligned in first column)
+            std::string name = walletRows_[i].name;
+            if (name.length() > 20) name = name.substr(0, 20);
+            DrawText(name.c_str(), (int)col1X, (int)y, 20, BLACK);
+
+            // Income (centered in second column)
+            std::string incStr = FormatCurrency((long long)walletRows_[i].income);
+            int incW = MeasureText(incStr.c_str(), 20);
+            DrawText(incStr.c_str(), (int)(col2X + colWidth / 2.0f - incW / 2.0f), (int)y, 20, GREEN);
+
+            // Expense (centered in third column)
+            std::string expStr = FormatCurrency((long long)walletRows_[i].expense);
+            int expW = MeasureText(expStr.c_str(), 20);
+            DrawText(expStr.c_str(), (int)(col3X + colWidth / 2.0f - expW / 2.0f), (int)y, 20, RED);
+
+            // Balance (right-aligned with 20px padding from right edge)
+            std::string balStr = FormatCurrency((long long)walletRows_[i].balance);
+            int balW = MeasureText(balStr.c_str(), 20);
+            Color balColor = walletRows_[i].balance >= 0 ? DARKBLUE : RED;
+            DrawText(balStr.c_str(), (int)(rightEdge - 20 - balW), (int)y, 20, balColor);
+
+            y += 30.0f;
+        }
+    } else if (hasIncomeBreakdownStyledData_ || hasExpenseBreakdownStyledData_) {
+        // Styled breakdown table with 3 columns: Name (left+20) | Amount (middle, right-aligned) | Percent (right-20, right-aligned)
+        float xLabel = PADDING + 12.0f + 20.0f; // left bound + 20px padding
+        float rightEdge = PADDING + (LEFT_COLUMN_WIDTH - 20);
+        float rightPad = 20.0f;
+        float amountAlignPos = rightEdge - 150.0f; // position where amount value aligns right
+        
+        float y = contentTop + (reportTitle_.empty() ? 10.0f : 50.0f);
+
+        // Draw header row
+        DrawText("Source/Category", (int)xLabel, (int)y, 22, DARKGRAY);
+        int amountHeaderW = MeasureText("Amount", 22);
+        DrawText("Amount", (int)(amountAlignPos - amountHeaderW), (int)y, 22, DARKGRAY);
+        DrawText("Percent", (int)(rightEdge - rightPad - MeasureText("Percent", 22)), (int)y, 22, DARKGRAY);
+        y += 32.0f;
+
+        // Draw separator line below header
+        DrawLine((int)(xLabel - 20.0f), (int)y, (int)(rightEdge - 10), (int)y, LIGHTGRAY);
+        y += 20.0f;
+
+        // Draw data rows (inside scroll area)
+        for (int i = 0; i < breakdownRowCount_; ++i) {
+            std::string name = breakdownRows_[i].name;
+            if (name.length() > 25) name = name.substr(0, 25);
+            DrawText(name.c_str(), (int)xLabel, (int)y, 20, BLACK);
+
+            // Amount (middle column, right-aligned)
+            std::string amtStr = FormatCurrency((long long)breakdownRows_[i].amount);
+            int amtW = MeasureText(amtStr.c_str(), 20);
+            DrawText(amtStr.c_str(), (int)(amountAlignPos - amtW), (int)y, 20, hasIncomeBreakdownStyledData_ ? GREEN : RED);
+
+            // Percent (right column, right-aligned)
+            char percentBuf[16];
+            snprintf(percentBuf, sizeof(percentBuf), "%.1f%%", breakdownRows_[i].percentage);
+            int pctW = MeasureText(percentBuf, 20);
+            DrawText(percentBuf, (int)(rightEdge - rightPad - pctW), (int)y, 20, DARKGRAY);
+
+            y += 28.0f;
+        }
+        
+        // Note: TOTAL will be drawn outside the scroll area (after resultsArea_.End())
+    } else if (hasWalletBalanceData_) {
+        // Styled wallet balance view with right-aligned currency
+        float xLabel = PADDING + 12.0f;
+        float rightEdge = PADDING + (LEFT_COLUMN_WIDTH - 20);
+        const int padRight = 100;
+
+        float y = contentTop + (reportTitle_.empty() ? 10.0f : 50.0f);
+
+        auto drawAmount = [&](const char* label, const std::string& amountStr, int labelSize, Color labelColor, int valueSize, Color valueColor) {
+            DrawText(label, (int)xLabel, (int)y, labelSize, labelColor);
+            int tw = MeasureText(amountStr.c_str(), valueSize);
+            int vx = (int)(rightEdge - padRight - tw);
+            DrawText(amountStr.c_str(), vx, (int)y, valueSize, valueColor);
+            y += (float)(valueSize + 20);
+        };
+
+        drawAmount("Total Income:",   FormatCurrency((long long)wbIncome_),  24, BLACK, 30, GREEN);
+        drawAmount("Total Expense:",  FormatCurrency((long long)wbExpense_), 24, BLACK, 30, RED);
+        drawAmount("Current Balance:",FormatCurrency((long long)wbBalance_), 28, BLACK, 35, DARKBLUE);
+    } else {
+        float y = contentTop + (reportTitle_.empty() ? 8.0f : 130.0f);
+        for (int i = 0; i < reportLineCount_; ++i) {
+            DrawText(reportLines_[i].c_str(), PADDING + 12, y, 22, BLACK);
+            y += LINE_H;
+        }
     }
     resultsArea_.End();
 
-    // Draw error indicator if needed
-    if (errorID_ > 0) {
-        DrawFormErrorTextIndicator(Rectangle{ (float)PADDING, PADDING + 80.0f, 
-                                             (float)(LEFT_COLUMN_WIDTH - 20), 40.0f }, errorID_);
+    // Draw TOTAL for breakdown views (outside scroll area, so it doesn't scroll)
+    if (hasIncomeBreakdownStyledData_ || hasExpenseBreakdownStyledData_) {
+        float xLabel = PADDING + 12.0f + 20.0f;
+        float resultsBottom = PADDING + 80.0f + (STATS_SCREEN_H - PADDING * 2 - 80);
+        std::string totalStr = std::string("TOTAL: ") + FormatCurrency((long long)breakdownTotal_);
+        Color totalColor = hasIncomeBreakdownStyledData_ ? GREEN : RED;
+        DrawText(totalStr.c_str(), (int)(xLabel - 20.0f), (int)(resultsBottom - 40), 22, totalColor);
     }
 
     // Draw dialogs on top
     if (showDateRangeDialog_) {
         dateRangeDialog_.Draw();
+        // Labels above each input box
+        Rectangle r = dateRangeDialog_.GetRect();
+        DrawText("Start Date", (int)r.x + 20, (int)r.y + 50, 16, DARKGRAY);
+        DrawText("End Date",   (int)r.x + 20, (int)r.y + 130, 16, DARKGRAY);
+        // Error indicator positioned between inputs and buttons
+        if (errorID_ == 2 || errorID_ == 3) {
+            DrawFormErrorTextIndicator(Rectangle{ r.x + 400, r.y + 280, 1, 1 }, errorID_);
+        }
     }
     if (showWalletSelectDialog_) {
         walletSelectDialog_.Draw();
         if (walletDropdown_) {
             walletDropdown_->DrawBase();
+        }
+        // Error indicator just under the dropdown inside the dialog
+        if (errorID_ == 4) {
+            Rectangle r = walletSelectDialog_.GetRect();
+            DrawFormErrorTextIndicator(Rectangle{ r.x + 400, r.y + 200, 1, 1 }, errorID_);
+        }
+    }
+    if (showYearSelectDialog_) {
+        yearSelectDialog_.Draw();
+        if (yearDropdown_) {
+            yearDropdown_->DrawBase();
+        }
+        // Error indicator just under the dropdown inside the dialog
+        if (errorID_ == 5) {
+            Rectangle r = yearSelectDialog_.GetRect();
+            DrawFormErrorTextIndicator(Rectangle{ r.x + 400, r.y + 200, 1, 1 }, errorID_);
         }
     }
 
@@ -175,16 +392,35 @@ void StatisticWindow::Draw(DataManager& dm) {
     if (showWalletSelectDialog_ && walletDropdown_ && walletDropdown_->IsOpen()) {
         walletDropdown_->DrawListOverlay();
     }
+    if (showYearSelectDialog_ && yearDropdown_ && yearDropdown_->IsOpen()) {
+        yearDropdown_->DrawListOverlay();
+    }
 }
 
 
-void StatisticWindow::ClearReport() { reportLineCount_ = 0; }
+void StatisticWindow::ClearReport() { 
+    reportLineCount_ = 0; 
+    reportTitle_ = "";
+    hasTimeBasedData_ = false;
+    hasAnnualOverviewData_ = false;
+    hasWalletBalanceData_ = false;
+    hasWalletBasedStyledData_ = false;
+    hasIncomeBreakdownStyledData_ = false;
+    hasExpenseBreakdownStyledData_ = false;
+    if (walletRows_) { delete[] walletRows_; walletRows_ = nullptr; }
+    walletRowCount_ = 0;
+    if (breakdownRows_) { delete[] breakdownRows_; breakdownRows_ = nullptr; }
+    breakdownRowCount_ = 0;
+    breakdownTotal_ = 0.0;
+}
+
 void StatisticWindow::AppendLine(const std::string& s) { 
     if (reportLineCount_ < reportLineCapacity_) reportLines_[reportLineCount_++] = s; 
 }
 
 void StatisticWindow::OpenDateRangeDialog() {
     dateRangeDialog_.ResetInputs();
+    dateRangeDialog_.Open();
     showDateRangeDialog_ = true;
     errorID_ = -1;
 }
@@ -216,11 +452,17 @@ void StatisticWindow::SubmitDateRange() {
 void StatisticWindow::OpenWalletSelectDialog() {
     if (!dataManager_) return;
 
-    // Clear and repopulate dropdown with wallet options
+    // Recreate dropdown with wallet options
     if (walletDropdown_) {
         delete walletDropdown_;
     }
-    walletDropdown_ = new Dropdown(40, 70, 320, 40, "Select Wallet");
+    {
+        Rectangle r = walletSelectDialog_.GetRect();
+        float dx = r.x + 20.0f;
+        float dy = r.y + 60.0f;
+        float dw = r.width - 40.0f;
+        walletDropdown_ = new Dropdown(dx, dy, dw, 40.0f, "Select Wallet");
+    }
 
     // Add all wallets to dropdown
     int walletCount = 0;
@@ -234,6 +476,7 @@ void StatisticWindow::OpenWalletSelectDialog() {
 
     delete[] walletIds;
 
+    walletSelectDialog_.Open();
     showWalletSelectDialog_ = true;
     errorID_ = -1;
 }
@@ -255,232 +498,277 @@ void StatisticWindow::SubmitWalletSelect() {
 void StatisticWindow::CloseDialogs() {
     showDateRangeDialog_ = false;
     showWalletSelectDialog_ = false;
+    showYearSelectDialog_ = false;
     dateRangeDialog_.Close();
     walletSelectDialog_.Close();
+    yearSelectDialog_.Close();
 }
 
-static bool lessOrEq(date a, date b) { return compareDate(a, b) <= 0; }
-static bool greaterOrEq(date a, date b) { return compareDate(a, b) >= 0; }
+void StatisticWindow::OpenYearSelectDialog() {
+    if (!dataManager_) return;
 
+    // Recreate dropdown with year options
+    if (yearDropdown_) {
+        delete yearDropdown_;
+    }
+    {
+        Rectangle r = yearSelectDialog_.GetRect();
+        float dx = r.x + 20.0f;
+        float dy = r.y + 60.0f;
+        float dw = r.width - 40.0f;
+        yearDropdown_ = new Dropdown(dx, dy, dw, 40.0f, "Select Year");
+    }
+
+    // Get all unique years from transactions
+    int* years = new int[100];
+    int yearCount = 0;
+    auto addYear = [&](int y){
+        for (int i = 0; i < yearCount; ++i) if (years[i] == y) return;
+        if (yearCount < 100) years[yearCount++] = y;
+    };
+
+    for (int i = 0; i < dataManager_->incomes_.getCount(); ++i) {
+        addYear(dataManager_->incomes_.getAt(i).day.year);
+    }
+    for (int i = 0; i < dataManager_->expenses_.getCount(); ++i) {
+        addYear(dataManager_->expenses_.getAt(i).day.year);
+    }
+
+    // Add years to dropdown
+    for (int i = 0; i < yearCount; ++i) {
+        char yearStr[16];
+        snprintf(yearStr, sizeof(yearStr), "%d", years[i]);
+        yearDropdown_->AddOption(yearStr, years[i]);
+    }
+
+    delete[] years;
+
+    yearSelectDialog_.Open();
+    showYearSelectDialog_ = true;
+    errorID_ = -1;
+}
+
+void StatisticWindow::SubmitYearSelect() {
+    if (!yearDropdown_) return;
+
+    int selectedYear = yearDropdown_->GetSelectedValue();
+    if (selectedYear < 0) {
+        errorID_ = 5; // Error ID 5 for no year selected
+        return;
+    }
+
+    errorID_ = -1;
+
+    // Create array with single selected year
+    int* selectedYears = new int[1];
+    selectedYears[0] = selectedYear;
+    ShowAnnualOverview(selectedYears, 1);
+    delete[] selectedYears;
+
+    CloseDialogs();
+}
 void StatisticWindow::ShowTimeBasedStats(date fromDate, date toDate) {
     if (!dataManager_) return;
     ClearReport();
 
-    auto& incomes = dataManager_->incomes_;
-    auto& expenses = dataManager_->expenses_;
+    // Call the statistic function from statistic.cpp
+    TimeReport report = getStatTimeBased(fromDate, toDate, dataManager_->incomes_, dataManager_->expenses_);
 
-    double totalInc = 0.0, totalExp = 0.0;
-    for (int i = 0; i < incomes.getCount(); ++i) {
-        IncomeTransaction t = incomes.getAt(i);
-        if (greaterOrEq(t.day, fromDate) && lessOrEq(t.day, toDate)) totalInc += t.amount;
-    }
-    for (int i = 0; i < expenses.getCount(); ++i) {
-        ExpenseTransaction t = expenses.getAt(i);
-        if (greaterOrEq(t.day, fromDate) && lessOrEq(t.day, toDate)) totalExp += t.amount;
-    }
-
-    char fromBuf[16], toBuf[16];
-    snprintf(fromBuf, sizeof(fromBuf), "%02d/%02d/%04d", fromDate.day, fromDate.month, fromDate.year);
-    snprintf(toBuf, sizeof(toBuf), "%02d/%02d/%04d", toDate.day, toDate.month, toDate.year);
-
-    AppendLine("--- TIME-BASED SUMMARY ---");
-    AppendLine("");
-    AppendLine(std::string("Period: ") + fromBuf + " to " + toBuf);
-    AppendLine("");
-    std::ostringstream oss;
-    oss << "Total Income:  " << FormatCurrency((long long)totalInc); AppendLine(oss.str()); oss.str(""); oss.clear();
-    oss << "Total Expense: " << FormatCurrency((long long)totalExp); AppendLine(oss.str()); oss.str(""); oss.clear();
-    oss << "Net Balance:   " << FormatCurrency((long long)(totalInc - totalExp)); AppendLine(oss.str());
+    // Store for styled drawing
+    reportTitle_ = "TIME-BASED SUMMARY";
+    hasTimeBasedData_ = true;
+    tbFrom_ = fromDate;
+    tbTo_ = toDate;
+    tbReport_ = report;
 }
 
 void StatisticWindow::ShowWalletBasedStats() {
     if (!dataManager_) return;
     ClearReport();
 
-    auto& incomes = dataManager_->incomes_;
-    auto& expenses = dataManager_->expenses_;
-    auto& wallets = dataManager_->wallets_;
+    hasTimeBasedData_ = false;
+    hasWalletBasedStyledData_ = true;
+    reportTitle_ = "WALLET-BASED SUMMARY";
 
     // Aggregate per wallet (dynamic array, max 100 wallets)
     struct WalletAgg { int id; double inc, exp; };
     WalletAgg* agg = new WalletAgg[100];
     int aggCount = 0;
+
     auto touch = [&](int id) -> WalletAgg& {
         for (int i = 0; i < aggCount; ++i) if (agg[i].id == id) return agg[i];
         if (aggCount < 100) { agg[aggCount].id = id; agg[aggCount].inc = 0; agg[aggCount].exp = 0; return agg[aggCount++]; }
         return agg[0];
     };
 
-    for (int i = 0; i < incomes.getCount(); ++i) {
-        auto t = incomes.getAt(i);
+    // Aggregate income by wallet
+    for (int i = 0; i < dataManager_->incomes_.getCount(); ++i) {
+        auto t = dataManager_->incomes_.getAt(i);
         touch(t.walletID).inc += t.amount;
     }
-    for (int i = 0; i < expenses.getCount(); ++i) {
-        auto t = expenses.getAt(i);
+
+    // Aggregate expense by wallet
+    for (int i = 0; i < dataManager_->expenses_.getCount(); ++i) {
+        auto t = dataManager_->expenses_.getAt(i);
         touch(t.walletID).exp += t.amount;
     }
 
-    AppendLine("--- WALLET-BASED SUMMARY ---");
-    AppendLine("");
-    AppendLine("Wallet Name             | Income         | Expense        | Balance");
-    AppendLine("-------------------------------------------------------------------");
-    
+    // Store results in styled state
+    walletRows_ = new WalletRow[aggCount];
+    walletRowCount_ = aggCount;
     for (int i = 0; i < aggCount; ++i) {
-        std::string name = wallets.getWalletName(agg[i].id);
-        std::ostringstream row;
-        row << std::left << std::setw(25) << name.substr(0, 25)
-            << " | " << std::right << std::setw(12) << FormatCurrency((long long)agg[i].inc)
-            << " | " << std::right << std::setw(12) << FormatCurrency((long long)agg[i].exp)
-            << " | " << std::right << std::setw(12) << FormatCurrency((long long)(agg[i].inc - agg[i].exp));
-        AppendLine(row.str());
+        walletRows_[i].id = agg[i].id;
+        walletRows_[i].name = dataManager_->wallets_.getWalletName(agg[i].id);
+        walletRows_[i].income = agg[i].inc;
+        walletRows_[i].expense = agg[i].exp;
+        walletRows_[i].balance = agg[i].inc - agg[i].exp;
     }
+
     delete[] agg;
 }
 
-void StatisticWindow::ShowAnnualOverview() {
+void StatisticWindow::ShowAnnualOverview(int* selectedYears, int yearCount) {
     if (!dataManager_) return;
     ClearReport();
-    auto& incomes = dataManager_->incomes_;
-    auto& expenses = dataManager_->expenses_;
 
-    double totalInc = 0.0, totalExp = 0.0;
-    int* years = new int[100];
-    int yearCount = 0;
-    auto addYear = [&](int y){ 
-        for (int i = 0; i < yearCount; ++i) if (years[i] == y) return;
-        if (yearCount < 100) years[yearCount++] = y; 
-    };
+    // Get annual overview using selected years
+    TimeReport report = getAnnualOverview(selectedYears, yearCount, dataManager_->incomes_, dataManager_->expenses_);
 
-    for (int i = 0; i < incomes.getCount(); ++i) { auto t = incomes.getAt(i); totalInc += t.amount; addYear(t.day.year); }
-    for (int i = 0; i < expenses.getCount(); ++i) { auto t = expenses.getAt(i); totalExp += t.amount; addYear(t.day.year); }
+    // Prepare custom draw state (no AppendLine, no stringstream)
+    hasTimeBasedData_ = false;
+    hasAnnualOverviewData_ = true;
+    reportTitle_ = "ANNUAL OVERVIEW";
+    aoReport_ = report;
 
-    std::ostringstream oss;
-    AppendLine("--- ANNUAL OVERVIEW ---");
-    AppendLine("");
-    if (yearCount > 0) {
-        oss << "Years included: ";
-        for (int i = 0; i < yearCount; ++i) { oss << years[i] << ((i+1<yearCount)?", ":""); }
-        AppendLine(oss.str());
-        oss.str(""); oss.clear();
+    // Build period text like "2023, 2024"
+    aoPeriod_.clear();
+    for (int i = 0; i < yearCount; ++i) {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%d", selectedYears[i]);
+        if (!aoPeriod_.empty()) aoPeriod_ += ", ";
+        aoPeriod_ += buf;
     }
-    AppendLine("");
-    oss << "Total Income:   " << FormatCurrency((long long)totalInc); AppendLine(oss.str()); oss.str(""); oss.clear();
-    oss << "Total Expense:  " << FormatCurrency((long long)totalExp); AppendLine(oss.str()); oss.str(""); oss.clear();
-    oss << "Net Balance:    " << FormatCurrency((long long)(totalInc - totalExp)); AppendLine(oss.str());
-    delete[] years;
 }
 
 void StatisticWindow::ShowIncomeBreakdown() {
     if (!dataManager_) return;
     ClearReport();
-    auto& incomes = dataManager_->incomes_;
-    auto& sources = dataManager_->sources_;
 
-    struct Rec { int id; double amt; };
-    Rec* recs = new Rec[100];
-    int recCount = 0;
-    auto touch = [&](int id) -> Rec& { 
-        for (int i = 0; i < recCount; ++i) if (recs[i].id==id) return recs[i]; 
-        if (recCount < 100) { recs[recCount].id = id; recs[recCount].amt = 0; return recs[recCount++]; }
-        return recs[0]; 
+    hasTimeBasedData_ = false;
+    hasIncomeBreakdownStyledData_ = true;
+    // Get all unique years from income transactions
+    int* years = new int[100];
+    int yearCount = 0;
+    auto addYear = [&](int y){
+        for (int i = 0; i < yearCount; ++i) if (years[i] == y) return;
+        if (yearCount < 100) years[yearCount++] = y;
     };
 
-    double total = 0.0;
-    for (int i = 0; i < incomes.getCount(); ++i) { auto t = incomes.getAt(i); total += t.amount; touch(t.sourceID).amt += t.amount; }
-
-    AppendLine("--- INCOME BREAKDOWN (by source) ---");
-    AppendLine("");
-    if (total == 0.0) { AppendLine("(No income data)"); delete[] recs; return; }
-    
-    AppendLine("Source Name             | Amount         | Percent");
-    AppendLine("----------------------------------------------------------");
-    for (int i = 0; i < recCount; ++i) {
-        std::string name = sources.getSourceName(recs[i].id);
-        double pct = (recs[i].amt / total) * 100.0;
-        std::ostringstream row;
-        row << std::left << std::setw(25) << name.substr(0, 25)
-            << " | " << std::right << std::setw(12) << FormatCurrency((long long)recs[i].amt)
-            << " | " << std::fixed << std::setprecision(1) << std::setw(6) << pct << "%";
-        AppendLine(row.str());
+    for (int i = 0; i < dataManager_->incomes_.getCount(); ++i) {
+        addYear(dataManager_->incomes_.getAt(i).day.year);
     }
-    AppendLine("");
-    std::ostringstream totalRow; totalRow << "TOTAL: " << FormatCurrency((long long)total); AppendLine(totalRow.str());
-    delete[] recs;
+
+    // Get income breakdown using all years
+    BreakdownReport report = incomeAnnualBreakdown(years, yearCount, dataManager_->incomes_, dataManager_->sources_);
+
+    reportTitle_ = "INCOME BREAKDOWN (by source)";
+    
+    if (report.count == 0) {
+        AppendLine("(No income data)");
+        delete[] years;
+        return;
+    }
+
+    // Store results in styled state
+    breakdownRows_ = new BreakdownRow[report.count];
+    breakdownRowCount_ = report.count;
+    breakdownTotal_ = report.totalAmount;
+    
+    for (int i = 0; i < report.count; ++i) {
+        breakdownRows_[i].name = report.items[i].name;
+        breakdownRows_[i].amount = report.items[i].amount;
+        breakdownRows_[i].percentage = report.items[i].percentage;
+    }
+
+    delete[] report.items;
+    delete[] years;
 }
 
 void StatisticWindow::ShowExpenseBreakdown() {
     if (!dataManager_) return;
     ClearReport();
-    auto& expenses = dataManager_->expenses_;
-    auto& categories = dataManager_->categories_;
 
-    struct Rec { int id; double amt; };
-    Rec* recs = new Rec[100];
-    int recCount = 0;
-    auto touch = [&](int id) -> Rec& { 
-        for (int i = 0; i < recCount; ++i) if (recs[i].id==id) return recs[i]; 
-        if (recCount < 100) { recs[recCount].id = id; recs[recCount].amt = 0; return recs[recCount++]; }
-        return recs[0]; 
+    hasTimeBasedData_ = false;
+    hasExpenseBreakdownStyledData_ = true;
+    // Get all unique years from expense transactions
+    int* years = new int[100];
+    int yearCount = 0;
+    auto addYear = [&](int y){
+        for (int i = 0; i < yearCount; ++i) if (years[i] == y) return;
+        if (yearCount < 100) years[yearCount++] = y;
     };
 
-    double total = 0.0;
-    for (int i = 0; i < expenses.getCount(); ++i) { auto t = expenses.getAt(i); total += t.amount; touch(t.categoryID).amt += t.amount; }
-
-    AppendLine("--- EXPENSE BREAKDOWN (by category) ---");
-    AppendLine("");
-    if (total == 0.0) { AppendLine("(No expense data)"); delete[] recs; return; }
-    
-    AppendLine("Category Name           | Amount         | Percent");
-    AppendLine("----------------------------------------------------------");
-    for (int i = 0; i < recCount; ++i) {
-        std::string name = categories.getCategoryName(recs[i].id);
-        double pct = (recs[i].amt / total) * 100.0;
-        std::ostringstream row;
-        row << std::left << std::setw(25) << name.substr(0, 25)
-            << " | " << std::right << std::setw(12) << FormatCurrency((long long)recs[i].amt)
-            << " | " << std::fixed << std::setprecision(1) << std::setw(6) << pct << "%";
-        AppendLine(row.str());
+    for (int i = 0; i < dataManager_->expenses_.getCount(); ++i) {
+        addYear(dataManager_->expenses_.getAt(i).day.year);
     }
-    AppendLine("");
-    std::ostringstream totalRow; totalRow << "TOTAL: " << FormatCurrency((long long)total); AppendLine(totalRow.str());
-    delete[] recs;
+
+    // Get expense breakdown using all years
+    BreakdownReport report = expenseAnnualBreakdown(years, yearCount, dataManager_->expenses_, dataManager_->categories_);
+
+    reportTitle_ = "EXPENSE BREAKDOWN (by category)";
+    
+    if (report.count == 0) {
+        AppendLine("(No expense data)");
+        delete[] years;
+        return;
+    }
+
+    // Store results in styled state
+    breakdownRows_ = new BreakdownRow[report.count];
+    breakdownRowCount_ = report.count;
+    breakdownTotal_ = report.totalAmount;
+    
+    for (int i = 0; i < report.count; ++i) {
+        breakdownRows_[i].name = report.items[i].name;
+        breakdownRows_[i].amount = report.items[i].amount;
+        breakdownRows_[i].percentage = report.items[i].percentage;
+    }
+
+    delete[] report.items;
+    delete[] years;
 }
 
 void StatisticWindow::ShowWalletBalance(int walletID) {
     if (!dataManager_) return;
     ClearReport();
 
-    auto& incomes = dataManager_->incomes_;
-    auto& expenses = dataManager_->expenses_;
-    auto& wallets = dataManager_->wallets_;
+    hasTimeBasedData_ = false;
+    hasAnnualOverviewData_ = false;
+    hasWalletBalanceData_ = true;
+    // Call the statistic function from statistic.cpp
+    double balance = getWalletBalance(walletID, dataManager_->incomes_, dataManager_->expenses_);
 
+    // Calculate income and expense totals for this wallet
     double totalIncome = 0.0;
     double totalExpense = 0.0;
 
-    // Sum income for this wallet
-    for (int i = 0; i < incomes.getCount(); ++i) {
-        if (incomes.getAt(i).walletID == walletID) {
-            totalIncome += incomes.getAt(i).amount;
+    for (int i = 0; i < dataManager_->incomes_.getCount(); ++i) {
+        if (dataManager_->incomes_.getAt(i).walletID == walletID) {
+            totalIncome += dataManager_->incomes_.getAt(i).amount;
         }
     }
 
-    // Sum expense for this wallet
-    for (int i = 0; i < expenses.getCount(); ++i) {
-        if (expenses.getAt(i).walletID == walletID) {
-            totalExpense += expenses.getAt(i).amount;
+    for (int i = 0; i < dataManager_->expenses_.getCount(); ++i) {
+        if (dataManager_->expenses_.getAt(i).walletID == walletID) {
+            totalExpense += dataManager_->expenses_.getAt(i).amount;
         }
     }
 
-    double balance = totalIncome - totalExpense;
-    std::string walletName = wallets.getWalletName(walletID);
+    std::string walletName = dataManager_->wallets_.getWalletName(walletID);
 
-    AppendLine("--- WALLET BALANCE ---");
-    AppendLine("");
-    AppendLine("Wallet: " + walletName);
-    AppendLine("");
-    std::ostringstream oss;
-    oss << "Total Income:   " << FormatCurrency((long long)totalIncome); AppendLine(oss.str()); oss.str(""); oss.clear();
-    oss << "Total Expense:  " << FormatCurrency((long long)totalExpense); AppendLine(oss.str()); oss.str(""); oss.clear();
-    AppendLine("");
-    oss << "Current Balance: " << FormatCurrency((long long)balance); AppendLine(oss.str());
+    reportTitle_ = "WALLET BALANCE - " + walletName;
+    wbWalletName_ = walletName;
+    wbIncome_ = totalIncome;
+    wbExpense_ = totalExpense;
+    wbBalance_ = balance;
 }

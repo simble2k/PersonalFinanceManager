@@ -30,7 +30,6 @@ saves/*.dat
 # Compiled Dynamic libraries
 *.so
 *.dylib
-*.dll
 
 # Allow shipping runtime DLLs in prebuild
 !prebuild/*.dll
