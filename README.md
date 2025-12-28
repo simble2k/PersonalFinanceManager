@@ -72,8 +72,7 @@ Persistence: Custom Binary Serialization.
 **Phạm Quốc Bảo**:
 
 • Backend Architecture: Core logic for Transactions and
-Recurring Manager (IncomeTransaction.cpp, Expense-
-Transaction.cpp, recurring.cpp).
+Recurring Manager (IncomeTransaction.cpp, ExpenseTransaction.cpp, recurring.cpp).
 
 • Data Management: Designed NameTable structure and
 Binary Persistence (Save/Load).
@@ -81,27 +80,23 @@ Binary Persistence (Save/Load).
 • System Reliability: Developed Console Interface (CLI),
 Logic Validation, and Technical Documentation.
 
-• Testing Support: Assisted with manual testing scenar-
-ios and bug reporting.
+• Testing Support: Assisted with manual testing scenarios and bug reporting.
 
 **Nguyễn Quốc Bảo**:
 
 • User Interface (GUI): Implementation of the graphical
 interface using Raylib.
 
-• Component Design: Created reusable UI widgets (But-
-tons, Dropdowns, ScrollAreas).
+• Component Design: Created reusable UI widgets (Buttons, Dropdowns, ScrollAreas).
 
 • Visual Layout: Designed the Dashboard and Window
 layouts.
 
 **Lê Nguyễn Hải Đăng**:
 
-• Statistic Reporting: Core logic for Statistic & Report-
-ing features and helpers function (Developed statistic.cpp,
+• Statistic Reporting: Core logic for Statistic & Reporting features and helpers function (Developed statistic.cpp,
 date.cpp)
 
-• Testing Support: Assisted with testing Statistic & Re-
-porting functions by Statistic Menu on Console.
+• Testing Support: Assisted with testing Statistic & Reporting functions by Statistic Menu on Console.
 
 <p align="center"> <sub>Made with ❤️ for CS160 Final Project</sub> </p>
