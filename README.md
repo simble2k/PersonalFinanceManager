@@ -41,7 +41,7 @@ See the application in action:
 
 ## 🚀 How to Run
 
-Open run_app.exe and it should run without any problems.
+Open run_app.exe and it should run without any problems. Please unzip the folder before running the executable to ensure data saves correctly.
 
 ---
 
