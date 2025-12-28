@@ -2,6 +2,7 @@
 #define STATISTIC_H
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include "date.h"
 #include "IncomeTransaction.h"
 #include "ExpenseTransaction.h"
@@ -16,7 +17,7 @@ struct TimeReport {
 };
 
 struct BreakdownItem {
-    string name;       
+    std::string name;       
     double amount;     
     double percentage; 
 };
@@ -28,7 +29,7 @@ struct BreakdownReport {
 };
 
 struct WalletStatRecord {
-    string walletName;
+    std::string walletName;
     double amount;
 };
 

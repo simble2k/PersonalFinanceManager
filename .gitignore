@@ -45,7 +45,6 @@ saves/*.dat
 *.lib
 
 # Executables
-*.exe
 *.out
 *.app
 
