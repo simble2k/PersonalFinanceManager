@@ -109,32 +109,38 @@ Data Structures: Custom Hash Tables (NameTable) & Dynamic Arrays.
 Persistence: Custom Binary Serialization.
 
 ## 👥 Contributors
-Phạm Quốc Bảo:
+**Phạm Quốc Bảo**:
 
 • Backend Architecture: Core logic for Transactions and
 Recurring Manager (IncomeTransaction.cpp, Expense-
 Transaction.cpp, recurring.cpp).
+
 • Data Management: Designed NameTable structure and
 Binary Persistence (Save/Load).
+
 • System Reliability: Developed Console Interface (CLI),
 Logic Validation, and Technical Documentation.
+
 • Testing Support: Assisted with manual testing scenar-
 ios and bug reporting.
 
-Nguyễn Quốc Bảo:
+**Nguyễn Quốc Bảo**:
 
 • User Interface (GUI): Implementation of the graphical
 interface using Raylib.
+
 • Component Design: Created reusable UI widgets (But-
 tons, Dropdowns, ScrollAreas).
+
 • Visual Layout: Designed the Dashboard and Window
 layouts.
 
-Lê Nguyễn Hải Đăng:
+**Lê Nguyễn Hải Đăng**:
 
 • Statistic Reporting: Core logic for Statistic & Report-
 ing features and helpers function (Developed statistic.cpp,
 date.cpp)
+
 • Testing Support: Assisted with testing Statistic & Re-
 porting functions by Statistic Menu on Console.
 
